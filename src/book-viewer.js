@@ -758,6 +758,11 @@ export const BookViewer = GObject.registerClass({
         this._book_author.visible = !!this._book_author.label
         this.root.title = this._book_title.label
 
+        // Update AI panel with book title
+        if (this.#aiPanel) {
+            this.#aiPanel.setBookTitle(this._book_title.label)
+        }
+
         const { language: { direction } } = reader.view
         utils.setDirection(this._book_info, direction)
         for (const x of [

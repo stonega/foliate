@@ -1,4 +1,5 @@
 import Gtk from 'gi://Gtk'
+import Adw from 'gi://Adw'
 import GLib from 'gi://GLib'
 import GObject from 'gi://GObject'
 import Gdk from 'gi://Gdk'
@@ -22,6 +23,350 @@ const AIMessage = GObject.registerClass({
         if (!this.timestamp) {
             this.timestamp = new Date().toISOString()
         }
+    }
+
+    toJSON() {
+        return {
+            role: this.role,
+            content: this.content,
+            timestamp: this.timestamp,
+            isError: this.is_error,
+        }
+    }
+
+    static fromJSON(obj) {
+        return new AIMessage({
+            role: obj.role,
+            content: obj.content,
+            timestamp: obj.timestamp,
+            is_error: obj.isError || false,
+        })
+    }
+})
+
+// Chat Session class for storing a complete conversation
+const ChatSession = GObject.registerClass({
+    GTypeName: 'FoliateChatSession',
+    Properties: utils.makeParams({
+        'id': 'string',
+        'title': 'string',
+        'created': 'string',
+        'updated': 'string',
+        'book-title': 'string',
+    }),
+}, class extends GObject.Object {
+    #messages = []
+
+    constructor(params) {
+        super(params)
+        if (!this.id) {
+            this.id = GLib.uuid_string_random()
+        }
+        if (!this.created) {
+            this.created = new Date().toISOString()
+        }
+        this.updated = this.created
+    }
+
+    get messages() {
+        return this.#messages
+    }
+
+    addMessage(message) {
+        this.#messages.push(message)
+        this.updated = new Date().toISOString()
+        // Auto-generate title from first user message if not set
+        if (!this.title && message.role === 'user') {
+            this.title = message.content.substring(0, 50) + (message.content.length > 50 ? '…' : '')
+        }
+    }
+
+    toJSON() {
+        return {
+            id: this.id,
+            title: this.title,
+            created: this.created,
+            updated: this.updated,
+            bookTitle: this.book_title,
+            messages: this.#messages.map(m => m.toJSON()),
+        }
+    }
+
+    static fromJSON(obj) {
+        const session = new ChatSession({
+            id: obj.id,
+            title: obj.title,
+            created: obj.created,
+            updated: obj.updated,
+            book_title: obj.bookTitle,
+        })
+        if (obj.messages) {
+            for (const msg of obj.messages) {
+                session.#messages.push(AIMessage.fromJSON(msg))
+            }
+        }
+        return session
+    }
+})
+
+// Chat History Manager - handles persistent storage of chat sessions
+export class ChatHistoryManager {
+    #storage
+    #sessions = []
+
+    constructor() {
+        const path = GLib.build_filenamev([GLib.get_user_data_dir(), pkg.name, 'ai-chat'])
+        GLib.mkdir_with_parents(path, 0o755)
+        this.#storage = new utils.JSONStorage(path, 'history', 2)
+        this.#loadSessions()
+
+        // Listen for external modifications
+        this.#storage.connect('externally-modified', () => this.#loadSessions())
+    }
+
+    #loadSessions() {
+        try {
+            const data = this.#storage.get('sessions', [])
+            this.#sessions = data.map(s => ChatSession.fromJSON(s))
+            // Sort by updated date, newest first
+            this.#sessions.sort((a, b) => new Date(b.updated) - new Date(a.updated))
+        } catch (e) {
+            console.error('Failed to load chat sessions:', e)
+            this.#sessions = []
+        }
+    }
+
+    #saveSessions() {
+        try {
+            this.#storage.set('sessions', this.#sessions.map(s => s.toJSON()))
+        } catch (e) {
+            console.error('Failed to save chat sessions:', e)
+        }
+    }
+
+    get sessions() {
+        return this.#sessions
+    }
+
+    createSession(bookTitle = null) {
+        const session = new ChatSession({
+            book_title: bookTitle,
+        })
+        this.#sessions.unshift(session)
+        this.#saveSessions()
+        return session
+    }
+
+    getSession(id) {
+        return this.#sessions.find(s => s.id === id)
+    }
+
+    updateSession(session) {
+        const index = this.#sessions.findIndex(s => s.id === session.id)
+        if (index !== -1) {
+            this.#sessions[index] = session
+            // Re-sort by updated date
+            this.#sessions.sort((a, b) => new Date(b.updated) - new Date(a.updated))
+            this.#saveSessions()
+        }
+    }
+
+    deleteSession(id) {
+        const index = this.#sessions.findIndex(s => s.id === id)
+        if (index !== -1) {
+            this.#sessions.splice(index, 1)
+            this.#saveSessions()
+        }
+    }
+
+    clearAllSessions() {
+        this.#sessions = []
+        this.#saveSessions()
+    }
+}
+
+// Create singleton instance
+export const chatHistoryManager = new ChatHistoryManager()
+
+// Chat History Dialog
+export const ChatHistoryDialog = GObject.registerClass({
+    GTypeName: 'FoliateChatHistoryDialog',
+    Signals: {
+        'session-selected': { param_types: [GObject.TYPE_STRING] },
+    },
+}, class extends Adw.Dialog {
+    #listBox
+
+    constructor(params) {
+        super({
+            title: _('Chat History'),
+            content_width: 400,
+            content_height: 500,
+            ...params,
+        })
+
+        const toolbarView = new Adw.ToolbarView()
+        this.set_child(toolbarView)
+
+        // Header bar
+        const headerBar = new Adw.HeaderBar({
+            show_start_title_buttons: false,
+            show_end_title_buttons: false,
+        })
+        headerBar.pack_start(new Gtk.Button({
+            label: _('Close'),
+            action_name: 'window.close',
+        }))
+
+        const clearButton = new Gtk.Button({
+            icon_name: 'user-trash-symbolic',
+            tooltip_text: _('Clear All History'),
+            css_classes: ['flat'],
+        })
+        clearButton.connect('clicked', () => this.#confirmClearAll())
+        headerBar.pack_end(clearButton)
+
+        toolbarView.add_top_bar(headerBar)
+
+        // Content
+        const scrolled = new Gtk.ScrolledWindow({
+            hscrollbar_policy: Gtk.PolicyType.NEVER,
+            vexpand: true,
+        })
+
+        this.#listBox = new Gtk.ListBox({
+            selection_mode: Gtk.SelectionMode.NONE,
+            css_classes: ['boxed-list'],
+            margin_start: 12,
+            margin_end: 12,
+            margin_top: 12,
+            margin_bottom: 12,
+        })
+
+        scrolled.set_child(this.#listBox)
+        toolbarView.set_content(scrolled)
+
+        this.#loadSessions()
+    }
+
+    #loadSessions() {
+        // Clear existing rows
+        let child = this.#listBox.get_first_child()
+        while (child) {
+            const next = child.get_next_sibling()
+            this.#listBox.remove(child)
+            child = next
+        }
+
+        const sessions = chatHistoryManager.sessions
+
+        if (sessions.length === 0) {
+            const emptyRow = new Adw.ActionRow({
+                title: _('No Chat History'),
+                subtitle: _('Your conversations will appear here'),
+                sensitive: false,
+            })
+            emptyRow.add_prefix(new Gtk.Image({
+                icon_name: 'chat-symbolic',
+                css_classes: ['dim-label'],
+            }))
+            this.#listBox.append(emptyRow)
+            return
+        }
+
+        for (const session of sessions) {
+            const row = this.#createSessionRow(session)
+            this.#listBox.append(row)
+        }
+    }
+
+    #createSessionRow(session) {
+        const row = new Adw.ActionRow({
+            title: session.title || _('Untitled Chat'),
+            subtitle: this.#formatDate(session.updated),
+            activatable: true,
+        })
+
+        // Book title badge if available
+        if (session.book_title) {
+            row.add_suffix(new Gtk.Label({
+                label: session.book_title,
+                css_classes: ['caption', 'dim-label'],
+                ellipsize: 3, // PANGO_ELLIPSIZE_END
+                max_width_chars: 15,
+            }))
+        }
+
+        // Message count
+        const countLabel = new Gtk.Label({
+            label: `${session.messages.length}`,
+            css_classes: ['caption', 'dim-label'],
+            tooltip_text: _('Messages'),
+        })
+        row.add_suffix(countLabel)
+
+        // Delete button
+        const deleteButton = new Gtk.Button({
+            icon_name: 'edit-delete-symbolic',
+            valign: Gtk.Align.CENTER,
+            css_classes: ['flat', 'circular'],
+            tooltip_text: _('Delete'),
+        })
+        deleteButton.connect('clicked', () => {
+            chatHistoryManager.deleteSession(session.id)
+            this.#loadSessions()
+        })
+        row.add_suffix(deleteButton)
+
+        // Load session on click
+        row.connect('activated', () => {
+            this.emit('session-selected', session.id)
+            this.close()
+        })
+
+        return row
+    }
+
+    #formatDate(isoString) {
+        try {
+            const date = new Date(isoString)
+            const now = new Date()
+            const diff = now - date
+
+            // Today
+            if (diff < 24 * 60 * 60 * 1000 && date.getDate() === now.getDate()) {
+                return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            }
+            // Yesterday
+            if (diff < 48 * 60 * 60 * 1000) {
+                return _('Yesterday')
+            }
+            // This week
+            if (diff < 7 * 24 * 60 * 60 * 1000) {
+                return date.toLocaleDateString(undefined, { weekday: 'long' })
+            }
+            // Older
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        } catch {
+            return ''
+        }
+    }
+
+    #confirmClearAll() {
+        const dialog = new Adw.AlertDialog({
+            heading: _('Clear All History?'),
+            body: _('This will permanently delete all chat conversations.'),
+        })
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('clear', _('Clear All'))
+        dialog.set_response_appearance('clear', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect('response', (_, response) => {
+            if (response === 'clear') {
+                chatHistoryManager.clearAllSessions()
+                this.#loadSessions()
+            }
+        })
+        dialog.present(this)
     }
 })
 
@@ -283,6 +628,7 @@ export const AIChatPanel = GObject.registerClass({
     Properties: utils.makeParams({
         'visible-panel': 'boolean',
         'document-context': 'string',
+        'book-title': 'string',
     }),
     Signals: {
         'toggle-panel': {},
@@ -290,7 +636,7 @@ export const AIChatPanel = GObject.registerClass({
     },
     InternalChildren: [
         'chat-list', 'message-entry', 'send-button',
-        'new-chat-button', 'settings-button',
+        'new-chat-button', 'settings-button', 'history-button',
         'loading-spinner', 'status-label',
         'model-label', 'scroll-window',
     ],
@@ -298,6 +644,7 @@ export const AIChatPanel = GObject.registerClass({
     #messages = []
     #settings
     #chatService
+    #currentSession = null
 
     constructor(params) {
         super(params)
@@ -309,8 +656,9 @@ export const AIChatPanel = GObject.registerClass({
 
         // Connect signals
         this._send_button.connect('clicked', () => this.#sendMessage())
-        this._new_chat_button.connect('clicked', () => this.clearChat())
+        this._new_chat_button.connect('clicked', () => this.#startNewChat())
         this._settings_button.connect('clicked', () => this.emit('open-settings'))
+        this._history_button.connect('clicked', () => this.#showHistoryDialog())
 
         // Entry key handling
         this._message_entry.connect('activate', () => this.#sendMessage())
@@ -332,6 +680,73 @@ export const AIChatPanel = GObject.registerClass({
 
         // Update model label
         this.#updateModelLabel()
+
+        // Start with a new session
+        this.#startNewChat()
+    }
+
+    #startNewChat() {
+        // Save current session if it has messages
+        if (this.#currentSession && this.#messages.length > 0) {
+            chatHistoryManager.updateSession(this.#currentSession)
+        }
+
+        // Clear UI
+        this.#clearChatUI()
+
+        // Create new session
+        this.#currentSession = chatHistoryManager.createSession(this.book_title)
+        this.#messages = []
+    }
+
+    #showHistoryDialog() {
+        const dialog = new ChatHistoryDialog()
+        dialog.connect('session-selected', (_, sessionId) => {
+            this.#loadSession(sessionId)
+        })
+        dialog.present(this.get_root())
+    }
+
+    #loadSession(sessionId) {
+        const session = chatHistoryManager.getSession(sessionId)
+        if (!session) return
+
+        // Save current session first
+        if (this.#currentSession && this.#messages.length > 0) {
+            chatHistoryManager.updateSession(this.#currentSession)
+        }
+
+        // Clear current UI
+        this.#clearChatUI()
+
+        // Load the selected session
+        this.#currentSession = session
+        this.#messages = []
+
+        // Restore messages to UI
+        for (const msg of session.messages) {
+            this.#messages.push(msg)
+            const row = this.#createMessageRow(msg)
+            this._chat_list.append(row)
+        }
+
+        // Scroll to bottom
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            const adj = this._scroll_window.vadjustment
+            adj.value = adj.upper - adj.page_size
+            return false
+        })
+    }
+
+    #clearChatUI() {
+        // Remove all children from chat list
+        let child = this._chat_list.get_first_child()
+        while (child) {
+            const next = child.get_next_sibling()
+            this._chat_list.remove(child)
+            child = next
+        }
+        this._status_label.visible = false
     }
 
     #updateModelLabel() {
@@ -401,6 +816,12 @@ export const AIChatPanel = GObject.registerClass({
 
     #addMessage(message) {
         this.#messages.push(message)
+
+        // Save to session
+        if (this.#currentSession) {
+            this.#currentSession.addMessage(message)
+            chatHistoryManager.updateSession(this.#currentSession)
+        }
 
         // Create message row
         const row = this.#createMessageRow(message)
@@ -483,15 +904,7 @@ export const AIChatPanel = GObject.registerClass({
     }
 
     clearChat() {
-        this.#messages = []
-        // Remove all children from chat list
-        let child = this._chat_list.get_first_child()
-        while (child) {
-            const next = child.get_next_sibling()
-            this._chat_list.remove(child)
-            child = next
-        }
-        this._status_label.visible = false
+        this.#startNewChat()
     }
 
     refreshModelLabel() {
@@ -500,5 +913,14 @@ export const AIChatPanel = GObject.registerClass({
 
     setDocumentContext(text) {
         this.document_context = text
+    }
+
+    setBookTitle(title) {
+        this.book_title = title
+        // Update current session's book title if session exists and has no messages yet
+        if (this.#currentSession && this.#messages.length === 0) {
+            this.#currentSession.book_title = title
+            chatHistoryManager.updateSession(this.#currentSession)
+        }
     }
 })

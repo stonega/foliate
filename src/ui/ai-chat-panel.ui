@@ -35,6 +35,13 @@
         </object>
       </child>
       <child>
+        <object class="GtkButton" id="history-button">
+          <property name="icon-name">document-open-recent-symbolic</property>
+          <property name="tooltip-text" translatable="yes">Chat History</property>
+          <style><class name="flat"/><class name="circular"/></style>
+        </object>
+      </child>
+      <child>
         <object class="GtkButton" id="settings-button">
           <property name="icon-name">emblem-system-symbolic</property>
           <property name="tooltip-text" translatable="yes">AI Settings</property>
