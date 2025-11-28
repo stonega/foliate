@@ -887,6 +887,11 @@ export const BookViewer = GObject.registerClass({
                 'show-popover': (_, popover) =>
                     this._view.showPopover(popover, point, dir),
                 'run-tool': () => ({ text, lang }),
+                'ask-ai': (_, selectedText) => {
+                    resolved = true
+                    this.#askAI(selectedText)
+                    resolve()
+                },
                 // it seems `closed` is emitted before the actions are run
                 // so it needs the timeout
                 'closed': () => setTimeout(() => resolved ? null : resolve(), 0),
@@ -1124,6 +1129,17 @@ export const BookViewer = GObject.registerClass({
 
     aiSettings() {
         this.#showAISettings()
+    }
+
+    #askAI(text) {
+        // Show the AI panel if not visible
+        if (!this._ai_panel_button.active) {
+            this._ai_panel_button.active = true
+        }
+        // Set the text in the AI panel input and focus it
+        if (this.#aiPanel) {
+            this.#aiPanel.setInputText(text)
+        }
     }
 
     vfunc_unroot() {

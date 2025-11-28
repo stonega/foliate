@@ -923,4 +923,13 @@ export const AIChatPanel = GObject.registerClass({
             chatHistoryManager.updateSession(this.#currentSession)
         }
     }
+
+    setInputText(text) {
+        // Set the text in the input field
+        this._message_entry.text = text
+        // Focus the input field
+        this._message_entry.grab_focus()
+        // Position cursor at the end
+        this._message_entry.set_position(-1)
+    }
 })
