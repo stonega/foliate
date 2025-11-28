@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+<template class="FoliateAIModelEditorDialog" parent="AdwDialog">
+  <property name="title" translatable="yes">Configure AI Model</property>
+  <property name="content-width">450</property>
+  <property name="content-height">500</property>
+  
+  <child>
+    <object class="AdwToolbarView">
+      <child type="top">
+        <object class="AdwHeaderBar">
+          <property name="show-start-title-buttons">False</property>
+          <property name="show-end-title-buttons">False</property>
+          <child type="start">
+            <object class="GtkButton">
+              <property name="label" translatable="yes">Cancel</property>
+              <property name="action-name">window.close</property>
+            </object>
+          </child>
+          <child type="end">
+            <object class="GtkButton" id="save-button">
+              <property name="label" translatable="yes">Save</property>
+              <property name="sensitive">False</property>
+              <style><class name="suggested-action"/></style>
+            </object>
+          </child>
+        </object>
+      </child>
+      
+      <child>
+        <object class="GtkScrolledWindow">
+          <property name="hscrollbar-policy">never</property>
+          <child>
+            <object class="AdwClamp">
+              <property name="maximum-size">400</property>
+              <property name="margin-start">12</property>
+              <property name="margin-end">12</property>
+              <property name="margin-top">12</property>
+              <property name="margin-bottom">12</property>
+              
+              <child>
+                <object class="GtkBox">
+                  <property name="orientation">vertical</property>
+                  <property name="spacing">24</property>
+                  
+                  <!-- Basic Info -->
+                  <child>
+                    <object class="AdwPreferencesGroup">
+                      <property name="title" translatable="yes">Basic Information</property>
+                      
+                      <child>
+                        <object class="AdwEntryRow" id="name-entry">
+                          <property name="title" translatable="yes">Model Name</property>
+                          <property name="input-purpose">name</property>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                  
+                  <!-- API Configuration -->
+                  <child>
+                    <object class="AdwPreferencesGroup">
+                      <property name="title" translatable="yes">API Configuration</property>
+                      
+                      <child>
+                        <object class="AdwEntryRow" id="endpoint-entry">
+                          <property name="title" translatable="yes">API Endpoint URL</property>
+                          <property name="input-purpose">url</property>
+                          <property name="show-apply-button">False</property>
+                          <child type="suffix">
+                            <object class="GtkImage">
+                              <property name="icon-name">network-server-symbolic</property>
+                              <property name="valign">center</property>
+                              <style><class name="dim-label"/></style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                      
+                      <child>
+                        <object class="AdwEntryRow" id="api-key-entry">
+                          <property name="title" translatable="yes">API Key</property>
+                          <property name="input-purpose">password</property>
+                          <child type="suffix">
+                            <object class="GtkButton" id="reveal-button">
+                              <property name="icon-name">view-reveal-symbolic</property>
+                              <property name="valign">center</property>
+                              <property name="tooltip-text" translatable="yes">Show/Hide API Key</property>
+                              <style><class name="flat"/><class name="circular"/></style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                      
+                      <child>
+                        <object class="AdwEntryRow" id="model-id-entry">
+                          <property name="title" translatable="yes">Model Identifier (Optional)</property>
+                          <child type="suffix">
+                            <object class="GtkImage">
+                              <property name="icon-name">help-about-symbolic</property>
+                              <property name="valign">center</property>
+                              <property name="tooltip-text" translatable="yes">e.g., gpt-4, claude-3-opus, llama2</property>
+                              <style><class name="dim-label"/></style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                  
+                  <!-- Test Connection -->
+                  <child>
+                    <object class="AdwPreferencesGroup">
+                      <property name="title" translatable="yes">Connection Test</property>
+                      
+                      <child>
+                        <object class="GtkBox">
+                          <property name="orientation">vertical</property>
+                          <property name="spacing">12</property>
+                          
+                          <child>
+                            <object class="GtkBox">
+                              <property name="orientation">horizontal</property>
+                              <property name="spacing">12</property>
+                              <property name="halign">start</property>
+                              
+                              <child>
+                                <object class="GtkButton" id="test-button">
+                                  <property name="sensitive">False</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="spacing">6</property>
+                                      <child>
+                                        <object class="GtkImage">
+                                          <property name="icon-name">network-transmit-receive-symbolic</property>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkLabel">
+                                          <property name="label" translatable="yes">Test Connection</property>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                              
+                              <child>
+                                <object class="GtkSpinner" id="test-spinner">
+                                  <property name="visible">False</property>
+                                  <property name="valign">center</property>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          
+                          <child>
+                            <object class="GtkLabel" id="test-status">
+                              <property name="visible">False</property>
+                              <property name="xalign">0</property>
+                              <property name="wrap">True</property>
+                              <style><class name="caption"/></style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                  
+                  <!-- Default Setting -->
+                  <child>
+                    <object class="AdwPreferencesGroup">
+                      <child>
+                        <object class="AdwActionRow">
+                          <property name="title" translatable="yes">Set as Default</property>
+                          <property name="subtitle" translatable="yes">Use this model automatically in the chat panel</property>
+                          <property name="activatable-widget">default-switch</property>
+                          <child type="suffix">
+                            <object class="GtkSwitch" id="default-switch">
+                              <property name="valign">center</property>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                  
+                  <!-- Help Text -->
+                  <child>
+                    <object class="GtkLabel">
+                      <property name="wrap">True</property>
+                      <property name="xalign">0</property>
+                      <property name="label" translatable="yes">Example endpoints:
+• OpenAI: https://api.openai.com/v1/chat/completions
+• Anthropic: Use an OpenAI-compatible proxy
+• Local (Ollama): http://localhost:11434/v1/chat/completions</property>
+                      <style><class name="caption"/><class name="dim-label"/></style>
+                    </object>
+                  </child>
+                </object>
+              </child>
+            </object>
+          </child>
+        </object>
+      </child>
+    </object>
+  </child>
+</template>
+</interface>

@@ -3,6 +3,8 @@
   <gresource prefix="/com/github/johnfactotum/Foliate">
     <file>annotations.js</file>
     <file>app.js</file>
+    <file>ai-chat.js</file>
+    <file>ai-settings.js</file>
     <file>book-info.js</file>
     <file>book-viewer.js</file>
     <file>data.js</file>
@@ -18,6 +20,9 @@
     <file>tts.js</file>
     <file>utils.js</file>
     <file>webview.js</file>
+    <file>ui/ai-chat-panel.ui</file>
+    <file>ui/ai-model-editor.ui</file>
+    <file>ui/ai-settings-dialog.ui</file>
     <file>ui/annotation-popover.ui</file>
     <file>ui/annotation-row.ui</file>
     <file>ui/book-image.ui</file>

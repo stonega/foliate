@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+<template class="FoliateAIChatPanel" parent="GtkBox">
+  <property name="orientation">vertical</property>
+  <property name="width-request">280</property>
+  
+  <!-- Header -->
+  <child>
+    <object class="GtkBox">
+      <property name="orientation">horizontal</property>
+      <property name="margin-start">12</property>
+      <property name="margin-end">12</property>
+      <property name="margin-top">8</property>
+      <property name="margin-bottom">8</property>
+      <property name="spacing">8</property>
+      <child>
+        <object class="GtkImage">
+          <property name="icon-name">user-available-symbolic</property>
+          <style><class name="accent"/></style>
+        </object>
+      </child>
+      <child>
+        <object class="GtkLabel">
+          <property name="label" translatable="yes">AI Assistant</property>
+          <property name="hexpand">True</property>
+          <property name="xalign">0</property>
+          <style><class name="heading"/></style>
+        </object>
+      </child>
+      <child>
+        <object class="GtkButton" id="new-chat-button">
+          <property name="icon-name">list-add-symbolic</property>
+          <property name="tooltip-text" translatable="yes">New Chat</property>
+          <style><class name="flat"/><class name="circular"/></style>
+        </object>
+      </child>
+      <child>
+        <object class="GtkButton" id="settings-button">
+          <property name="icon-name">emblem-system-symbolic</property>
+          <property name="tooltip-text" translatable="yes">AI Settings</property>
+          <style><class name="flat"/><class name="circular"/></style>
+        </object>
+      </child>
+    </object>
+  </child>
+  
+  <child>
+    <object class="GtkSeparator"/>
+  </child>
+  
+  <!-- Model indicator -->
+  <child>
+    <object class="GtkBox">
+      <property name="orientation">horizontal</property>
+      <property name="margin-start">12</property>
+      <property name="margin-end">12</property>
+      <property name="margin-top">6</property>
+      <property name="margin-bottom">6</property>
+      <property name="spacing">6</property>
+      <child>
+        <object class="GtkImage">
+          <property name="icon-name">applications-science-symbolic</property>
+          <style><class name="dim-label"/></style>
+        </object>
+      </child>
+      <child>
+        <object class="GtkLabel" id="model-label">
+          <property name="label" translatable="yes">No model configured</property>
+          <property name="ellipsize">end</property>
+          <property name="hexpand">True</property>
+          <property name="xalign">0</property>
+          <style><class name="caption"/><class name="dim-label"/></style>
+        </object>
+      </child>
+    </object>
+  </child>
+  
+  <!-- Chat messages area -->
+  <child>
+    <object class="GtkScrolledWindow" id="scroll-window">
+      <property name="vexpand">True</property>
+      <property name="hexpand">True</property>
+      <property name="hscrollbar-policy">never</property>
+      <child>
+        <object class="GtkBox" id="chat-list">
+          <property name="orientation">vertical</property>
+          <property name="spacing">0</property>
+        </object>
+      </child>
+    </object>
+  </child>
+  
+  <!-- Loading indicator and status -->
+  <child>
+    <object class="GtkBox">
+      <property name="orientation">horizontal</property>
+      <property name="margin-start">12</property>
+      <property name="margin-end">12</property>
+      <property name="margin-top">6</property>
+      <property name="margin-bottom">6</property>
+      <property name="spacing">8</property>
+      <property name="halign">center</property>
+      <child>
+        <object class="GtkSpinner" id="loading-spinner">
+          <property name="visible">False</property>
+        </object>
+      </child>
+      <child>
+        <object class="GtkLabel" id="status-label">
+          <property name="visible">False</property>
+          <property name="label" translatable="yes">AI is thinking…</property>
+          <style><class name="caption"/><class name="dim-label"/></style>
+        </object>
+      </child>
+    </object>
+  </child>
+  
+  <child>
+    <object class="GtkSeparator"/>
+  </child>
+  
+  <!-- Input area -->
+  <child>
+    <object class="GtkBox">
+      <property name="orientation">horizontal</property>
+      <property name="margin-start">12</property>
+      <property name="margin-end">12</property>
+      <property name="margin-top">8</property>
+      <property name="margin-bottom">8</property>
+      <property name="spacing">8</property>
+      <child>
+        <object class="GtkEntry" id="message-entry">
+          <property name="hexpand">True</property>
+          <property name="placeholder-text" translatable="yes">Ask AI about this book…</property>
+          <property name="secondary-icon-name">edit-clear-symbolic</property>
+          <property name="secondary-icon-tooltip-text" translatable="yes">Clear</property>
+        </object>
+      </child>
+      <child>
+        <object class="GtkButton" id="send-button">
+          <property name="icon-name">go-up-symbolic</property>
+          <property name="tooltip-text" translatable="yes">Send Message</property>
+          <style><class name="suggested-action"/><class name="circular"/></style>
+        </object>
+      </child>
+    </object>
+  </child>
+</template>
+</interface>
