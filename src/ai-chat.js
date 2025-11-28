@@ -267,7 +267,7 @@ export const ChatHistoryDialog = GObject.registerClass({
                 sensitive: false,
             })
             emptyRow.add_prefix(new Gtk.Image({
-                icon_name: 'chat-symbolic',
+                icon_name: 'user-available-symbolic',
                 css_classes: ['dim-label'],
             }))
             this.#listBox.append(emptyRow)
