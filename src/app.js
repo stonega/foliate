@@ -353,6 +353,34 @@ export const Application = GObject.registerClass({
             progress, trough {
                 min-width: 1px;
             }
+
+            /* AI Panel Styles */
+            .ai-panel {
+                border-left: 1px solid @borders;
+            }
+            .ai-panel .user-message {
+                background-color: alpha(@accent_bg_color, 0.15);
+                border-radius: 12px 12px 4px 12px;
+            }
+            .ai-panel .assistant-message {
+                background-color: alpha(@card_bg_color, 0.8);
+                border-radius: 12px 12px 12px 4px;
+            }
+            .ai-panel .error-message {
+                background-color: alpha(@error_bg_color, 0.15);
+                border-radius: 12px;
+            }
+            .ai-panel .error-message label {
+                color: @error_color;
+            }
+            
+            /* AI Settings Dialog Styles */
+            .success {
+                color: @success_color;
+            }
+            .error {
+                color: @error_color;
+            }
         `, -1)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),

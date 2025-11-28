@@ -21,6 +21,8 @@ import { ImageViewer } from './image-viewer.js'
 import { formatLanguageMap, formatAuthors, makeBookInfoWindow } from './book-info.js'
 import { themes, invertTheme, themeCssProvider } from './themes.js'
 import { dataStore } from './data.js'
+import { AIChatPanel } from './ai-chat.js'
+import { AISettingsDialog } from './ai-settings.js'
 
 // for use in the WebView
 const uiText = {
@@ -451,6 +453,7 @@ export const BookViewer = GObject.registerClass({
     Properties: utils.makeParams({
         'fold-sidebar': 'boolean',
         'highlight-color': 'string',
+        'ai-panel-visible': 'boolean',
     }),
     InternalChildren: [
         'top-overlay-box', 'top-overlay-stack',
@@ -467,14 +470,23 @@ export const BookViewer = GObject.registerClass({
         'annotation-stack', 'annotation-view', 'annotation-search-entry',
         'bookmark-stack', 'bookmark-view',
         'book-info', 'book-cover', 'book-title', 'book-author',
+        'ai-panel-revealer', 'ai-panel-box', 'ai-panel-button', 'ai-resize-handle',
     ],
 }, class extends Gtk.Overlay {
     #file
     #book
     #cover
     #data
+    #aiPanel
+    #aiSettings
+    #currentDocumentText = ''
+
     constructor(params) {
         super(params)
+
+        // Initialize AI panel
+        this.#initAIPanel()
+
         utils.connect(this._view, {
             'book-error': (_, x) => this.#onError(x),
             'book-ready': (_, x) => this.#onBookReady(x).catch(e => console.error(e)),
@@ -682,6 +694,7 @@ export const BookViewer = GObject.registerClass({
                 'toggle-toc', 'toggle-annotations', 'toggle-bookmarks',
                 'preferences', 'show-info', 'bookmark',
                 'export-annotations', 'import-annotations',
+                'toggle-ai-panel', 'ai-settings',
             ],
             props: ['fold-sidebar'],
         })
@@ -698,6 +711,7 @@ export const BookViewer = GObject.registerClass({
             '<ctrl><alt>d': 'viewer.toggle-bookmarks',
             '<ctrl>d': 'viewer.bookmark',
             '<alt>comma': 'viewer.preferences',
+            '<ctrl><alt>i': 'viewer.toggle-ai-panel',
             '<ctrl><shift>g': 'search.prev',
             '<ctrl>g': 'search.next',
             '<ctrl>c': 'selection.copy',
@@ -743,6 +757,11 @@ export const BookViewer = GObject.registerClass({
         this._book_author.label = formatAuthors(book.metadata)
         this._book_author.visible = !!this._book_author.label
         this.root.title = this._book_title.label
+
+        // Update AI panel with book title
+        if (this.#aiPanel) {
+            this.#aiPanel.setBookTitle(this._book_title.label)
+        }
 
         const { language: { direction } } = reader.view
         utils.setDirection(this._book_info, direction)
@@ -807,6 +826,12 @@ export const BookViewer = GObject.registerClass({
             this.#data.storage.set('progress', [location.current, location.total])
             this.#data.storage.set('lastLocation', cfi)
         }
+
+        // Update AI context with visible text
+        this.#getVisibleText().then(text => {
+            this.#currentDocumentText = text
+            this.#updateAIContext()
+        }).catch(e => console.debug('Failed to get visible text:', e))
     }
     #deleteAnnotation(annotation) {
         this.#data.deleteAnnotation(annotation)
@@ -862,6 +887,11 @@ export const BookViewer = GObject.registerClass({
                 'show-popover': (_, popover) =>
                     this._view.showPopover(popover, point, dir),
                 'run-tool': () => ({ text, lang }),
+                'ask-ai': (_, selectedText) => {
+                    resolved = true
+                    this.#askAI(selectedText)
+                    resolve()
+                },
                 // it seems `closed` is emitted before the actions are run
                 // so it needs the timeout
                 'closed': () => setTimeout(() => resolved ? null : resolve(), 0),
@@ -1003,6 +1033,115 @@ export const BookViewer = GObject.registerClass({
     importAnnotations() {
         importAnnotations(this.root, this.#data)
     }
+
+    // AI Panel Methods
+    #initAIPanel() {
+        // Create AI chat panel
+        this.#aiPanel = new AIChatPanel()
+        this._ai_panel_box.append(this.#aiPanel)
+
+        // Bind AI panel visibility to revealer
+        this._ai_panel_button.connect('toggled', button => {
+            this._ai_panel_revealer.reveal_child = button.active
+            this.ai_panel_visible = button.active
+        })
+
+        // Load saved visibility state
+        this.#aiSettings = utils.settings('ai')
+        if (this.#aiSettings) {
+            const visible = this.#aiSettings.get_boolean('panel-visible')
+            this._ai_panel_button.active = visible
+            this._ai_panel_revealer.reveal_child = visible
+
+            // Apply saved width
+            const width = this.#aiSettings.get_int('panel-width')
+            if (width > 0) {
+                this._ai_panel_box.width_request = width
+            }
+        }
+
+        // Save visibility state on change
+        this.connect('notify::ai-panel-visible', () => {
+            this.#aiSettings?.set_boolean('panel-visible', this.ai_panel_visible)
+        })
+
+        // Setup resize handle for AI panel
+        this._ai_resize_handle.cursor = Gdk.Cursor.new_from_name('col-resize', null)
+        this._ai_resize_handle.add_controller(utils.connect(new Gtk.GestureDrag(), {
+            'drag-update': (_, x) => {
+                const currentWidth = this._ai_panel_box.get_width()
+                const newWidth = Math.max(280, Math.min(600, currentWidth - x))
+                this._ai_panel_box.width_request = newWidth
+            },
+            'drag-end': () => {
+                // Save width on drag end
+                this.#aiSettings?.set_int('panel-width', this._ai_panel_box.width_request)
+            },
+        }))
+
+        // Connect AI panel settings button
+        this.#aiPanel.connect('open-settings', () => this.#showAISettings())
+    }
+
+    #showAISettings() {
+        const dialog = new AISettingsDialog()
+        dialog.connect('closed', () => {
+            // Refresh model label in chat panel
+            this.#aiPanel.refreshModelLabel()
+        })
+        dialog.present(this.root)
+    }
+
+    #updateAIContext() {
+        if (!this.#aiPanel) return
+        this.#aiPanel.setDocumentContext(this.#currentDocumentText)
+    }
+
+    async #getVisibleText() {
+        try {
+            // Get visible text content from the reader view
+            const text = await this._view.webView.eval(`
+                (() => {
+                    const view = globalThis.reader?.view
+                    if (!view) return ''
+                    const contents = view.renderer?.getContents?.()
+                    if (!contents || !contents.length) return ''
+                    
+                    let text = ''
+                    for (const { doc } of contents) {
+                        if (doc?.body) {
+                            text += doc.body.innerText + '\\n\\n'
+                        }
+                    }
+                    return text.substring(0, 10000) // Limit to 10k chars
+                })()
+            `)
+            return text || ''
+        } catch (e) {
+            console.debug('Could not get visible text:', e)
+            return ''
+        }
+    }
+
+    toggleAIPanel() {
+        this._ai_panel_button.active = !this._ai_panel_button.active
+    }
+
+    aiSettings() {
+        this.#showAISettings()
+    }
+
+    #askAI(text) {
+        // Show the AI panel if not visible
+        if (!this._ai_panel_button.active) {
+            this._ai_panel_button.active = true
+        }
+        // Set the text in the AI panel input and focus it
+        if (this.#aiPanel) {
+            this.#aiPanel.setInputText(text)
+        }
+    }
+
     vfunc_unroot() {
         this._navbar.tts_box.kill()
         this._view.viewSettings.unbindSettings()

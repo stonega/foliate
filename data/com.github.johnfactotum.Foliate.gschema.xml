@@ -4,6 +4,7 @@
     <child schema="com.github.johnfactotum.Foliate.window" name="window"/>
     <child schema="com.github.johnfactotum.Foliate.viewer" name="library"/>
     <child schema="com.github.johnfactotum.Foliate.viewer" name="viewer"/>
+    <child schema="com.github.johnfactotum.Foliate.ai" name="ai"/>
     <key name="color-scheme" type="i">
       <default>0</default>
     </key>
@@ -118,6 +119,40 @@
     </key>
     <key name="minimum-size" type="u">
       <default>0</default>
+    </key>
+  </schema>
+
+  <schema id="com.github.johnfactotum.Foliate.ai"
+    path="/com/github/johnfactotum/Foliate/ai/">
+    <key name="panel-visible" type="b">
+      <default>false</default>
+      <summary>AI Panel Visible</summary>
+      <description>Whether the AI chat panel is visible</description>
+    </key>
+    <key name="panel-width" type="i">
+      <default>360</default>
+      <summary>AI Panel Width</summary>
+      <description>Width of the AI chat panel in pixels</description>
+    </key>
+    <key name="default-model" type="s">
+      <default>''</default>
+      <summary>Default AI Model</summary>
+      <description>The ID of the default AI model to use for chat</description>
+    </key>
+    <key name="models" type="s">
+      <default>'[]'</default>
+      <summary>AI Models Configuration</summary>
+      <description>JSON array of configured AI models with their settings</description>
+    </key>
+    <key name="include-context" type="b">
+      <default>true</default>
+      <summary>Include Document Context</summary>
+      <description>Whether to include current document content as context for AI</description>
+    </key>
+    <key name="context-length" type="i">
+      <default>2000</default>
+      <summary>Context Length</summary>
+      <description>Maximum number of characters to include as document context</description>
     </key>
   </schema>
 </schemalist>
