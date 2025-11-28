@@ -555,12 +555,6 @@
                             </object>
                           </child>
                           <child type="end">
-                            <object class="GtkToggleButton" id="ai-panel-button">
-                              <property name="icon-name">user-available-symbolic</property>
-                              <property name="tooltip-text" translatable="yes">AI Assistant</property>
-                            </object>
-                          </child>
-                          <child type="end">
                             <object class="GtkMenuButton">
                               <property name="icon-name">view-more-symbolic</property>
                               <property name="tooltip-text" translatable="yes">View Menu</property>
@@ -644,6 +638,12 @@
                               <property name="icon-name">view-fullscreen-symbolic</property>
                               <property name="action-name">win.fullscreened</property>
                               <property name="tooltip-text" translatable="yes">Fullscreen</property>
+                            </object>
+                          </child>
+                          <child type="end">
+                            <object class="GtkToggleButton" id="ai-panel-button">
+                              <property name="icon-name">user-available-symbolic</property>
+                              <property name="tooltip-text" translatable="yes">AI Chat Panel</property>
                             </object>
                           </child>
                         </object>
