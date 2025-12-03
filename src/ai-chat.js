@@ -965,8 +965,7 @@ export const AIChatPanel = GObject.registerClass({
         }
     }
 
-    setupHeaderWidgets(toggle, menu, fullscreen) {
-        this._header_box.prepend(toggle)
+    setupHeaderWidgets(menu, fullscreen) {
         this._header_box.insert_child_after(menu, this._history_button)
         this._header_box.insert_child_after(fullscreen, menu)
     }

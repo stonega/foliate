@@ -107,10 +107,20 @@ themeCssProvider.load_from_data(`
         .sidebar-${id} scrolledwindow, .sidebar-${id} viewport {
             background: transparent;
         }
+        .ai-panel.sidebar-${id} .user-message, .ai-panel.sidebar-${id} .assistant-message {
+            background-color: ${theme.light.bg};
+            color: ${theme.light.fg};
+        }
+        .is-dark .ai-panel.sidebar-${id} .user-message, .is-dark .ai-panel.sidebar-${id} .assistant-message {
+            background-color: ${theme.dark.bg};
+            color: ${theme.dark.fg};
+        }
     `
 }).join(''), -1)
 
-export const invertTheme = ({ light, dark }) => ({ light, dark, inverted: {
-    fg: utils.invertColor(dark.fg),
-    link: utils.invertColor(dark.link),
-} })
+export const invertTheme = ({ light, dark }) => ({
+    light, dark, inverted: {
+        fg: utils.invertColor(dark.fg),
+        link: utils.invertColor(dark.link),
+    }
+})

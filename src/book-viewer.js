@@ -1120,11 +1120,9 @@ export const BookViewer = GObject.registerClass({
             if (button.active) {
                 if (this.#aiPanel && this.#aiPanel.headerBox) {
                     this._view_menu_button.unparent()
-                    this._ai_panel_button.unparent()
                     this._fullscreen_button.unparent()
 
                     this.#aiPanel.setupHeaderWidgets(
-                        this._ai_panel_button,
                         this._view_menu_button,
                         this._fullscreen_button
                     )
@@ -1153,6 +1151,8 @@ export const BookViewer = GObject.registerClass({
                     this._fullscreen_button.unparent()
 
                     if (headerBar) {
+                        // Unparent to ensure correct order
+                        this._ai_panel_button.unparent()
                         headerBar.pack_end(this._fullscreen_button)
                         headerBar.pack_end(this._ai_panel_button)
                         headerBar.pack_end(this._view_menu_button)
@@ -1188,7 +1188,7 @@ export const BookViewer = GObject.registerClass({
 
             // Apply saved width with constraints
             const savedWidth = this.#aiSettings.get_int('panel-width')
-            const width = savedWidth > 0 
+            const width = savedWidth > 0
                 ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, savedWidth))
                 : DEFAULT_PANEL_WIDTH
             this._ai_panel_box.width_request = width
@@ -1196,7 +1196,7 @@ export const BookViewer = GObject.registerClass({
             this._ai_panel_box.width_request = DEFAULT_PANEL_WIDTH
         }
         let dragStartWidth = 0
-        
+
         const aiResizeGesture = new Gtk.GestureDrag()
         aiResizeGesture.connect('drag-begin', () => {
             // Capture the current width at drag start
