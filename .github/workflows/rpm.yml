@@ -23,8 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           dnf install -y rpm-build rpmdevtools meson gcc gettext \
-            pkgconfig(gjs-1.0) pkgconfig(gtk4) pkgconfig(libadwaita-1) \
-            pkgconfig(webkitgtk-6.0) desktop-file-utils libappstream-glib
+            "pkgconfig(gjs-1.0)" "pkgconfig(gtk4)" "pkgconfig(libadwaita-1)" \
+            "pkgconfig(webkitgtk-6.0)" desktop-file-utils libappstream-glib
 
       - name: Prepare sources
         run: |
