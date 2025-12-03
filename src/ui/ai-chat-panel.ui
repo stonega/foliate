@@ -1,49 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-<template class="FoliateAIChatPanel" parent="GtkBox">
+<template class="FoliateAIChatPanelFixed" parent="GtkBox">
   <property name="orientation">vertical</property>
   <property name="width-request">200</property>
   
   <!-- Header -->
   <child>
-    <object class="GtkBox" id="header-box">
-      <property name="orientation">horizontal</property>
-      <property name="margin-start">12</property>
-      <property name="margin-end">12</property>
-      <property name="margin-top">8</property>
-      <property name="margin-bottom">8</property>
-      <property name="spacing">8</property>
+    <object class="GtkWindowHandle">
       <child>
-        <object class="GtkBox">
-          <property name="hexpand">True</property>
-        </object>
-      </child>
-      <child>
-        <object class="GtkButton" id="new-chat-button">
-          <property name="icon-name">list-add-symbolic</property>
-          <property name="tooltip-text" translatable="yes">New Chat</property>
-          <style><class name="flat"/><class name="circular"/></style>
-        </object>
-      </child>
-      <child>
-        <object class="GtkButton" id="history-button">
-          <property name="icon-name">document-open-recent-symbolic</property>
-          <property name="tooltip-text" translatable="yes">Chat History</property>
-          <style><class name="flat"/><class name="circular"/></style>
-        </object>
-      </child>
-      <child>
-        <object class="GtkButton" id="close-button">
-          <property name="icon-name">window-close-symbolic</property>
-          <property name="tooltip-text" translatable="yes">Close App</property>
-          <style><class name="circular"/></style>
+        <object class="GtkBox" id="header-box">
+          <property name="orientation">horizontal</property>
+          <property name="margin-start">12</property>
+          <property name="margin-end">12</property>
+          <property name="margin-top">8</property>
+          <property name="margin-bottom">8</property>
+          <property name="spacing">8</property>
+          <child>
+            <object class="GtkBox">
+              <property name="hexpand">True</property>
+            </object>
+          </child>
+          <child>
+            <object class="GtkButton" id="new-chat-button">
+              <property name="icon-name">list-add-symbolic</property>
+              <property name="tooltip-text" translatable="yes">New Chat</property>
+              <style><class name="flat"/><class name="circular"/></style>
+            </object>
+          </child>
+          <child>
+            <object class="GtkButton" id="history-button">
+              <property name="icon-name">document-open-recent-symbolic</property>
+              <property name="tooltip-text" translatable="yes">Chat History</property>
+              <style><class name="flat"/><class name="circular"/></style>
+            </object>
+          </child>
+          <child>
+            <object class="GtkWindowControls">
+              <property name="side">end</property>
+            </object>
+          </child>
         </object>
       </child>
     </object>
-  </child>
-  
-  <child>
-    <object class="GtkSeparator"/>
   </child>
   
   <!-- Model indicator -->
@@ -113,10 +111,6 @@
     </object>
   </child>
   
-  <child>
-    <object class="GtkSeparator"/>
-  </child>
-  
   <!-- Input area -->
   <child>
     <object class="GtkBox">
@@ -128,6 +122,7 @@
       <property name="spacing">8</property>
       <child>
         <object class="GtkScrolledWindow">
+          <property name="width-request">50</property>
           <property name="hexpand">True</property>
           <property name="propagate-natural-height">True</property>
           <property name="max-content-height">150</property>
@@ -151,6 +146,7 @@
       </child>
       <child>
         <object class="GtkButton" id="send-button">
+          <property name="valign">end</property>
           <property name="icon-name">go-up-symbolic</property>
           <property name="tooltip-text" translatable="yes">Send Message</property>
           <style><class name="suggested-action"/><class name="circular"/></style>

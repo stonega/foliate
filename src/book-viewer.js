@@ -314,8 +314,8 @@ GObject.registerClass({
             'scroll-begin': () => isDiscrete = false,
             'scroll': (_, dx, dy) => {
                 if (this.#pinchFactor > 1
-                || this.viewSettings.scrolled
-                || this.#dialogOpened) return false
+                    || this.viewSettings.scrolled
+                    || this.#dialogOpened) return false
                 if (isDiscrete) scrollPageAsync(dx, dy)
                 else {
                     dxLast = dx
@@ -337,11 +337,11 @@ GObject.registerClass({
         const gestureBack = new Gtk.GestureClick()
         gestureForward.set_button(9)
         gestureBack.set_button(8)
-        this.#webView.add_controller(utils.connect(gestureForward,{
-	    'pressed': () => this.#exec('reader.view.history.forward'),
+        this.#webView.add_controller(utils.connect(gestureForward, {
+            'pressed': () => this.#exec('reader.view.history.forward'),
         }))
-        this.#webView.add_controller(utils.connect(gestureBack,{
-	    'pressed': () => this.#exec('reader.view.history.back'),
+        this.#webView.add_controller(utils.connect(gestureBack, {
+            'pressed': () => this.#exec('reader.view.history.back'),
         }))
 
         const applyStyle = () => this.#applyStyle().catch(e => console.error(e))
@@ -510,7 +510,7 @@ const makeIdentifier = file => {
         const bytes = stream.read_bytes(10000000, null)
         const md5 = GLib.compute_checksum_for_bytes(GLib.ChecksumType.MD5, bytes)
         return `foliate:${md5}`
-    } catch(e) {
+    } catch (e) {
         console.warn(e)
         return null
     }
@@ -689,7 +689,8 @@ export const BookViewer = GObject.registerClass({
                 pos === Gtk.EntryIconPosition.SECONDARY ? entry.text = '' : null,
         })
         this._search_entry.add_controller(utils.addShortcuts({
-            'Escape': () => this._search_bar.search_mode_enabled = false }))
+            'Escape': () => this._search_bar.search_mode_enabled = false
+        }))
 
         // navigation
         this._toc_view.connect('go-to-href', (_, href) => {
@@ -810,7 +811,7 @@ export const BookViewer = GObject.registerClass({
     #onError({ id, message, stack }) {
         const desc = id === 'not-found' ? _('File not found')
             : id === 'unsupported-type' ? _('File type not supported')
-            : _('An error occurred')
+                : _('An error occurred')
         this._error_page.description = desc
         if (message) {
             this._error_page_details.label =
@@ -909,8 +910,10 @@ export const BookViewer = GObject.registerClass({
         this.root.add_toast(utils.connect(new Adw.Toast({
             title: _('Annotation deleted'),
             button_label: _('Undo'),
-        }), { 'button-clicked': () =>
-            this.#data.addAnnotation(annotation) }))
+        }), {
+            'button-clicked': () =>
+                this.#data.addAnnotation(annotation)
+        }))
     }
     #showSelection({ type, value, text, content, lang, pos: { point, dir } }) {
         if (type === 'annotation') return new Promise(resolve => {
@@ -1060,8 +1063,8 @@ export const BookViewer = GObject.registerClass({
     }
     #toggleSidebarContent(name) {
         if (this._flap.show_sidebar
-        && this._search_bar.search_mode_enabled === false
-        && this._contents_stack.visible_child_name === name)
+            && this._search_bar.search_mode_enabled === false
+            && this._contents_stack.visible_child_name === name)
             this._flap.show_sidebar = false
         else {
             this._search_bar.search_mode_enabled = false
@@ -1119,7 +1122,7 @@ export const BookViewer = GObject.registerClass({
                     this._view_menu_button.unparent()
                     this._ai_panel_button.unparent()
                     this._fullscreen_button.unparent()
-                    
+
                     this.#aiPanel.setupHeaderWidgets(
                         this._ai_panel_button,
                         this._view_menu_button,
@@ -1143,12 +1146,12 @@ export const BookViewer = GObject.registerClass({
                     }
                     return GLib.SOURCE_REMOVE
                 })
-                
+
                 if (this.#aiPanel && this.#aiPanel.headerBox) {
                     this._view_menu_button.unparent()
                     this._ai_panel_button.unparent()
                     this._fullscreen_button.unparent()
-                    
+
                     if (headerBar) {
                         headerBar.pack_end(this._fullscreen_button)
                         headerBar.pack_end(this._ai_panel_button)
@@ -1191,12 +1194,15 @@ export const BookViewer = GObject.registerClass({
         this._ai_resize_handle.add_controller(utils.connect(new Gtk.GestureDrag(), {
             'drag-begin': () => {
                 startWidth = this._ai_panel_box.get_width()
-                const [min, ] = this.#aiPanel.measure(Gtk.Orientation.HORIZONTAL, -1)
-                minWidth = Math.max(50, min)
+                const [min,] = this.#aiPanel.measure(Gtk.Orientation.HORIZONTAL, -1)
+                minWidth = Math.max(200, min)
             },
             'drag-update': (_, x) => {
                 const sidebarWidth = startWidth - x
-                this._ai_panel_box.width_request = Math.max(minWidth, sidebarWidth)
+                const newWidth = Math.max(minWidth, sidebarWidth)
+                if (this._ai_panel_box.width_request !== newWidth) {
+                    this._ai_panel_box.width_request = newWidth
+                }
             },
             'drag-end': () => {
                 this.#aiSettings?.set_int('panel-width', this._ai_panel_box.width_request)

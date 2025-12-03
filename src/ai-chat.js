@@ -1,6 +1,7 @@
 import Gtk from 'gi://Gtk'
 import Adw from 'gi://Adw'
 import GLib from 'gi://GLib'
+import Gio from 'gi://Gio'
 import GObject from 'gi://GObject'
 import Gdk from 'gi://Gdk'
 import Soup from 'gi://Soup'
@@ -659,8 +660,8 @@ export const aiChatService = new AIChatService()
 
 // Main AI Chat Panel Widget
 export const AIChatPanel = GObject.registerClass({
-    GTypeName: 'FoliateAIChatPanel',
-    Template: pkg.moduleuri('ui/ai-chat-panel.ui'),
+    GTypeName: 'FoliateAIChatPanelFixed',
+    Template: Gio.File.new_for_uri(import.meta.url).get_parent().get_child('ui').get_child('ai-chat-panel.ui').get_uri(),
     Properties: utils.makeParams({
         'visible-panel': 'boolean',
         'document-context': 'string',
@@ -675,7 +676,6 @@ export const AIChatPanel = GObject.registerClass({
         'header-box',
         'chat-list', 'message-view', 'send-button',
         'new-chat-button', 'history-button',
-        'close-button',
         'loading-spinner', 'status-label',
         'model-label', 'scroll-window',
     ],
@@ -700,7 +700,7 @@ export const AIChatPanel = GObject.registerClass({
         this._send_button.connect('clicked', () => this.#sendMessage())
         this._new_chat_button.connect('clicked', () => this.#startNewChat())
         this._history_button.connect('clicked', () => this.#showHistoryDialog())
-        this._close_button.connect('clicked', () => this.emit('close'))
+
 
         // Multi-line support with Ctrl+Enter to send
         const keyController = new Gtk.EventControllerKey()
