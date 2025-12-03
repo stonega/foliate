@@ -35,12 +35,12 @@ jobs:
           # Update spec file version
           sed -i "s/Version:        .*/Version:        $VERSION/" .github/packaging/foliate.spec
           
-          # Create tarball including submodules
-          tar --exclude-vcs --transform "s|^|foliate-$VERSION/|" --exclude="foliate-$VERSION.tar.gz" -czf foliate-$VERSION.tar.gz .
-          
           # Setup rpmbuild tree
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
-          cp foliate-$VERSION.tar.gz ~/rpmbuild/SOURCES/
+
+          # Create tarball including submodules
+          tar --exclude-vcs --transform "s|^|foliate-$VERSION/|" -czf ~/rpmbuild/SOURCES/foliate-$VERSION.tar.gz .
+          
           cp .github/packaging/foliate.spec ~/rpmbuild/SPECS/
 
       - name: Build RPM
