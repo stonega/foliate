@@ -548,6 +548,7 @@ export const BookViewer = GObject.registerClass({
     #data
     #aiPanel
     #aiSettings
+    #storage
     #currentDocumentText = ''
 
     constructor(params) {
@@ -811,7 +812,7 @@ export const BookViewer = GObject.registerClass({
     #onError({ id, message, stack }) {
         const desc = id === 'not-found' ? _('File not found')
             : id === 'unsupported-type' ? _('File type not supported')
-            : _('An error occurred')
+                : _('An error occurred')
         this._error_page.description = desc
         if (message) {
             this._error_page_details.label =
@@ -1192,26 +1193,41 @@ export const BookViewer = GObject.registerClass({
 
         // Load saved visibility state
         this.#aiSettings = utils.settings('ai')
-        if (this.#aiSettings) {
-            const visible = this.#aiSettings.get_boolean('panel-visible')
-            this._ai_panel_button.active = visible
-            if (visible) {
-                this._ai_panel_revealer.visible = true
-                this._ai_panel_revealer.reveal_child = true
-            } else {
-                this._ai_panel_revealer.reveal_child = false
-                this._ai_panel_revealer.visible = false
-            }
-
-            // Apply saved width with constraints
-            const savedWidth = this.#aiSettings.get_int('panel-width')
-            const width = savedWidth > 0
-                ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, savedWidth))
-                : DEFAULT_PANEL_WIDTH
-            this._ai_panel_box.width_request = width
-        } else {
-            this._ai_panel_box.width_request = DEFAULT_PANEL_WIDTH
+        if (!this.#aiSettings) {
+            const path = GLib.build_filenamev([GLib.get_user_data_dir(), pkg.name])
+            GLib.mkdir_with_parents(path, 0o755)
+            this.#storage = new utils.JSONStorage(path, 'ai-settings', 2)
         }
+
+        let visible = false
+        if (this.#aiSettings) {
+            visible = this.#aiSettings.get_boolean('panel-visible')
+        } else if (this.#storage) {
+            visible = this.#storage.get('panel-visible', false)
+        }
+
+        this._ai_panel_button.active = visible
+        if (visible) {
+            this._ai_panel_revealer.visible = true
+            this._ai_panel_revealer.reveal_child = true
+        } else {
+            this._ai_panel_revealer.reveal_child = false
+            this._ai_panel_revealer.visible = false
+        }
+
+        // Apply saved width with constraints
+        let savedWidth = 0
+        if (this.#aiSettings) {
+            savedWidth = this.#aiSettings.get_int('panel-width')
+        } else if (this.#storage) {
+            savedWidth = this.#storage.get('panel-width', DEFAULT_PANEL_WIDTH)
+        }
+
+        const width = savedWidth > 0
+            ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, savedWidth))
+            : DEFAULT_PANEL_WIDTH
+        this._ai_panel_box.width_request = width
+
         let dragStartWidth = 0
 
         const aiResizeGesture = new Gtk.GestureDrag()
@@ -1233,14 +1249,22 @@ export const BookViewer = GObject.registerClass({
             // Save the final width
             const finalWidth = this._ai_panel_box.width_request
             if (finalWidth >= MIN_PANEL_WIDTH) {
-                this.#aiSettings?.set_int('panel-width', finalWidth)
+                if (this.#aiSettings) {
+                    this.#aiSettings.set_int('panel-width', finalWidth)
+                } else if (this.#storage) {
+                    this.#storage.set('panel-width', finalWidth)
+                }
             }
         })
         this._ai_resize_handle.add_controller(aiResizeGesture)
 
         // Save visibility state on change
         this.connect('notify::ai-panel-visible', () => {
-            this.#aiSettings?.set_boolean('panel-visible', this.ai_panel_visible)
+            if (this.#aiSettings) {
+                this.#aiSettings.set_boolean('panel-visible', this.ai_panel_visible)
+            } else if (this.#storage) {
+                this.#storage.set('panel-visible', this.ai_panel_visible)
+            }
         })
 
         // Connect AI panel settings button

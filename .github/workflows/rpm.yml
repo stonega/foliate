@@ -1,0 +1,59 @@
+name: Build RPM Package
+
+on:
+  push:
+    branches: [ gtk4 ]
+  pull_request:
+    branches: [ gtk4 ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Install git
+        run: dnf install -y git
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Install dependencies
+        run: |
+          dnf install -y rpm-build rpmdevtools meson gcc gettext \
+            pkgconfig(gjs-1.0) pkgconfig(gtk4) pkgconfig(libadwaita-1) \
+            pkgconfig(webkitgtk-6.0) desktop-file-utils libappstream-glib
+
+      - name: Prepare sources
+        run: |
+          # Extract version from meson.build
+          VERSION=$(grep "version: " meson.build | head -n1 | cut -d "'" -f 2)
+          echo "Detected version: $VERSION"
+          
+          # Update spec file version
+          sed -i "s/Version:        .*/Version:        $VERSION/" .github/packaging/foliate.spec
+          
+          # Create tarball
+          # git archive requires safe directory configuration in some environments
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git archive --format=tar.gz --prefix=foliate-$VERSION/ HEAD > foliate-$VERSION.tar.gz
+          
+          # Setup rpmbuild tree
+          mkdir -p ~/rpmbuild/{SOURCES,SPECS}
+          cp foliate-$VERSION.tar.gz ~/rpmbuild/SOURCES/
+          cp .github/packaging/foliate.spec ~/rpmbuild/SPECS/
+
+      - name: Build RPM
+        run: |
+          rpmbuild -bb ~/rpmbuild/SPECS/foliate.spec
+
+      - name: Move RPMs
+        run: |
+          mv ~/rpmbuild/RPMS/*/*.rpm .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RPM Package
+          path: "*.rpm"
