@@ -672,6 +672,8 @@ export const AIChatPanel = GObject.registerClass({
         'toggle-panel': {},
         'open-settings': {},
         'close': {},
+        'request-chapter-context': {},
+        'request-page-context': {},
     },
     InternalChildren: [
         'header-box',
@@ -679,12 +681,16 @@ export const AIChatPanel = GObject.registerClass({
         'new-chat-button', 'history-button',
         'loading-spinner', 'status-label',
         'model-label', 'scroll-window',
+        'include-chapter-button', 'include-page-button',
+        'context-revealer', 'context-label', 'clear-context-button',
+        'input-frame', 'input-toolbar', 'send-hint-label',
     ],
 }, class extends Gtk.Box {
     #messages = []
     #settings
     #chatService
     #currentSession = null
+    #manualContext = null
 
     get headerBox() {
         return this._header_box
@@ -696,14 +702,78 @@ export const AIChatPanel = GObject.registerClass({
         if (!cssLoaded) {
             const provider = new Gtk.CssProvider()
             provider.load_from_data(`
-                .chat-input-container {
+                /* Chat input area styling - Native Adwaita look */
+                .chat-input-area {
+                    background: transparent;
+                }
+                
+                .chat-input-frame {
+                    background-color: @view_bg_color;
+                    border-radius: 8px;
+                    border: 1px solid alpha(@borders, 0.7);
+                }
+                
+                .chat-input-frame:focus-within {
+                    border-color: @accent_bg_color;
+                    box-shadow: 0 0 0 2px alpha(@accent_bg_color, 0.2);
+                }
+                
+                .chat-input-text {
+                    background: transparent;
+                    caret-color: @accent_bg_color;
+                }
+                
+                .context-button {
+                    min-width: 28px;
+                    min-height: 28px;
+                    padding: 4px;
+                    opacity: 0.7;
+                }
+                
+                .context-button:hover {
+                    opacity: 1;
+                    background-color: alpha(@accent_bg_color, 0.15);
+                }
+                
+                .context-button.active {
+                    color: @accent_bg_color;
+                    opacity: 1;
+                }
+                
+                .context-indicator {
+                    background-color: alpha(@accent_bg_color, 0.1);
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                }
+                
+                /* Message styling */
+                .user-message {
+                    background-color: @accent_bg_color;
+                    color: @accent_fg_color;
+                    border-radius: 12px 12px 4px 12px;
+                }
+                
+                .assistant-message {
+                    background-color: alpha(@window_bg_color, 0.8);
+                    border: 1px solid alpha(@borders, 0.5);
+                    border-radius: 12px 12px 12px 4px;
+                }
+                
+                .error-message {
+                    background-color: alpha(@error_bg_color, 0.2);
+                    border: 1px solid alpha(@error_bg_color, 0.5);
                     border-radius: 12px;
+                }
+                
+                /* Header styling */
+                .chat-header {
+                    background-color: alpha(@headerbar_bg_color, 0.95);
                 }
             `, -1)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
             cssLoaded = true
         }
@@ -711,24 +781,33 @@ export const AIChatPanel = GObject.registerClass({
         this.#settings = utils.settings('ai')
         this.#chatService = aiChatService
 
-        // Setup message list
-
         // Connect signals
         this._send_button.connect('clicked', () => this.#sendMessage())
         this._new_chat_button.connect('clicked', () => this.#startNewChat())
         this._history_button.connect('clicked', () => this.#showHistoryDialog())
 
+        // Context buttons
+        this._include_chapter_button.connect('clicked', () => {
+            this.emit('request-chapter-context')
+        })
+        this._include_page_button.connect('clicked', () => {
+            this.emit('request-page-context')
+        })
+        this._clear_context_button.connect('clicked', () => {
+            this.#clearManualContext()
+        })
 
-        // Multi-line support with Ctrl+Enter to send
+        // Key handling: Enter for new line, Ctrl+Enter to send
         const keyController = new Gtk.EventControllerKey()
         keyController.connect('key-pressed', (_, keyval, keycode, state) => {
             if (keyval === 65293 || keyval === 65421) { // Return or KP_Enter
-                if (state & Gdk.ModifierType.SHIFT_MASK) {
-                    // Allow Shift+Enter for new line
-                    return false
+                if (state & Gdk.ModifierType.CONTROL_MASK) {
+                    // Ctrl+Enter to send
+                    this.#sendMessage()
+                    return true
                 }
-                this.#sendMessage()
-                return true
+                // Plain Enter inserts new line (default behavior)
+                return false
             }
             return false
         })
@@ -739,6 +818,40 @@ export const AIChatPanel = GObject.registerClass({
 
         // Start with a new session
         this.#startNewChat()
+    }
+
+    #clearManualContext() {
+        this.#manualContext = null
+        this._context_revealer.reveal_child = false
+        this._include_chapter_button.remove_css_class('active')
+        this._include_page_button.remove_css_class('active')
+    }
+
+    setManualContext(text, type) {
+        if (!text || text.trim().length === 0) {
+            this.#clearManualContext()
+            return
+        }
+
+        this.#manualContext = text.trim()
+
+        // Update context indicator
+        if (type === 'chapter') {
+            this._context_label.label = _('Chapter context attached')
+            this._include_chapter_button.add_css_class('active')
+            this._include_page_button.remove_css_class('active')
+        } else if (type === 'page') {
+            this._context_label.label = _('Page context attached')
+            this._include_page_button.add_css_class('active')
+            this._include_chapter_button.remove_css_class('active')
+        } else {
+            this._context_label.label = _('Context attached')
+        }
+
+        this._context_revealer.reveal_child = true
+
+        // Focus the input field
+        this._message_view.grab_focus()
     }
 
     #startNewChat() {
@@ -842,9 +955,16 @@ export const AIChatPanel = GObject.registerClass({
         this.#setLoading(true)
 
         try {
-            // Get document context if enabled
+            // Get context: prefer manual context, fallback to auto context
             let context = null
-            if (this.#settings?.get_boolean('include-context') && this.document_context) {
+            if (this.#manualContext) {
+                // Use manually included context (chapter or page)
+                const maxLength = this.#settings?.get_int('context-length') ?? 8000
+                context = this.#manualContext.substring(0, maxLength)
+                // Clear manual context after use
+                this.#clearManualContext()
+            } else if (this.#settings?.get_boolean('include-context') && this.document_context) {
+                // Use auto context from visible page
                 const maxLength = this.#settings.get_int('context-length')
                 context = this.document_context.substring(0, maxLength)
             }

@@ -119,44 +119,143 @@
   <!-- Input area -->
   <child>
     <object class="GtkBox">
-      <property name="orientation">horizontal</property>
-      <property name="margin-start">12</property>
-      <property name="margin-end">12</property>
-      <property name="margin-top">8</property>
+      <property name="orientation">vertical</property>
+      <property name="margin-start">8</property>
+      <property name="margin-end">8</property>
+      <property name="margin-top">6</property>
       <property name="margin-bottom">8</property>
-      <property name="spacing">8</property>
+      <property name="spacing">6</property>
       <property name="hexpand">False</property>
+      <style><class name="chat-input-area"/></style>
+      
+      <!-- Context indicator bar -->
       <child>
-        <object class="GtkScrolledWindow">
-          <property name="hexpand">True</property>
-          <property name="propagate-natural-height">True</property>
-          <property name="propagate-natural-width">False</property>
-          <property name="max-content-height">150</property>
-          <property name="vscrollbar-policy">automatic</property>
-          <property name="hscrollbar-policy">never</property>
-          <style>
-            <class name="entry"/>
-            <class name="chat-input-container"/>
-          </style>
+        <object class="GtkRevealer" id="context-revealer">
+          <property name="reveal-child">False</property>
+          <property name="transition-type">slide-down</property>
           <child>
-            <object class="GtkTextView" id="message-view">
-              <property name="hexpand">True</property>
-              <property name="wrap-mode">word-char</property>
-              <property name="accepts-tab">False</property>
-              <property name="left-margin">4</property>
-              <property name="right-margin">4</property>
-              <property name="top-margin">4</property>
-              <property name="bottom-margin">4</property>
+            <object class="GtkBox" id="context-bar">
+              <property name="orientation">horizontal</property>
+              <property name="spacing">6</property>
+              <property name="margin-start">4</property>
+              <property name="margin-end">4</property>
+              <property name="margin-top">2</property>
+              <property name="margin-bottom">2</property>
+              <style><class name="context-indicator"/></style>
+              <child>
+                <object class="GtkImage">
+                  <property name="icon-name">emblem-documents-symbolic</property>
+                  <style><class name="dim-label"/></style>
+                </object>
+              </child>
+              <child>
+                <object class="GtkLabel" id="context-label">
+                  <property name="label" translatable="yes">Context attached</property>
+                  <property name="hexpand">True</property>
+                  <property name="xalign">0</property>
+                  <property name="ellipsize">end</property>
+                  <style><class name="caption"/><class name="dim-label"/></style>
+                </object>
+              </child>
+              <child>
+                <object class="GtkButton" id="clear-context-button">
+                  <property name="icon-name">window-close-symbolic</property>
+                  <property name="valign">center</property>
+                  <property name="tooltip-text" translatable="yes">Clear context</property>
+                  <style><class name="flat"/><class name="circular"/><class name="dim-label"/></style>
+                </object>
+              </child>
             </object>
           </child>
         </object>
       </child>
+      
+      <!-- Input row with text and send button -->
       <child>
-        <object class="GtkButton" id="send-button">
-          <property name="valign">end</property>
-          <property name="icon-name">go-up-symbolic</property>
-          <property name="tooltip-text" translatable="yes">Send Message</property>
-          <style><class name="suggested-action"/><class name="circular"/></style>
+        <object class="GtkBox">
+          <property name="orientation">horizontal</property>
+          <property name="spacing">6</property>
+          <property name="hexpand">False</property>
+          <child>
+            <object class="GtkFrame" id="input-frame">
+              <property name="hexpand">True</property>
+              <style><class name="chat-input-frame"/></style>
+              <child>
+                <object class="GtkBox">
+                  <property name="orientation">vertical</property>
+                  <child>
+                    <object class="GtkScrolledWindow">
+                      <property name="hexpand">True</property>
+                      <property name="propagate-natural-height">True</property>
+                      <property name="propagate-natural-width">False</property>
+                      <property name="max-content-height">120</property>
+                      <property name="min-content-height">36</property>
+                      <property name="vscrollbar-policy">automatic</property>
+                      <property name="hscrollbar-policy">never</property>
+                      <child>
+                        <object class="GtkTextView" id="message-view">
+                          <property name="hexpand">True</property>
+                          <property name="wrap-mode">word-char</property>
+                          <property name="accepts-tab">False</property>
+                          <property name="left-margin">8</property>
+                          <property name="right-margin">8</property>
+                          <property name="top-margin">8</property>
+                          <property name="bottom-margin">8</property>
+                          <style><class name="chat-input-text"/></style>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                  <!-- Bottom toolbar with context buttons -->
+                  <child>
+                    <object class="GtkBox" id="input-toolbar">
+                      <property name="orientation">horizontal</property>
+                      <property name="spacing">2</property>
+                      <property name="margin-start">4</property>
+                      <property name="margin-end">4</property>
+                      <property name="margin-bottom">4</property>
+                      <child>
+                        <object class="GtkButton" id="include-chapter-button">
+                          <property name="icon-name">view-list-symbolic</property>
+                          <property name="tooltip-text" translatable="yes">Include current chapter as context</property>
+                          <property name="valign">center</property>
+                          <style><class name="flat"/><class name="circular"/><class name="context-button"/></style>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="GtkButton" id="include-page-button">
+                          <property name="icon-name">view-paged-symbolic</property>
+                          <property name="tooltip-text" translatable="yes">Include current page as context</property>
+                          <property name="valign">center</property>
+                          <style><class name="flat"/><class name="circular"/><class name="context-button"/></style>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="GtkBox">
+                          <property name="hexpand">True</property>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="GtkLabel" id="send-hint-label">
+                          <property name="label" translatable="yes">Ctrl+Enter to send</property>
+                          <property name="valign">center</property>
+                          <style><class name="caption"/><class name="dim-label"/></style>
+                        </object>
+                      </child>
+                    </object>
+                  </child>
+                </object>
+              </child>
+            </object>
+          </child>
+          <child>
+            <object class="GtkButton" id="send-button">
+              <property name="valign">end</property>
+              <property name="icon-name">go-up-symbolic</property>
+              <property name="tooltip-text" translatable="yes">Send Message (Ctrl+Enter)</property>
+              <style><class name="suggested-action"/><class name="circular"/></style>
+            </object>
+          </child>
         </object>
       </child>
     </object>

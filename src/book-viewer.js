@@ -689,7 +689,7 @@ export const BookViewer = GObject.registerClass({
                 pos === Gtk.EntryIconPosition.SECONDARY ? entry.text = '' : null,
         })
         this._search_entry.add_controller(utils.addShortcuts({
-            'Escape': () => this._search_bar.search_mode_enabled = false
+            'Escape': () => this._search_bar.search_mode_enabled = false,
         }))
 
         // navigation
@@ -811,7 +811,7 @@ export const BookViewer = GObject.registerClass({
     #onError({ id, message, stack }) {
         const desc = id === 'not-found' ? _('File not found')
             : id === 'unsupported-type' ? _('File type not supported')
-                : _('An error occurred')
+            : _('An error occurred')
         this._error_page.description = desc
         if (message) {
             this._error_page_details.label =
@@ -912,7 +912,7 @@ export const BookViewer = GObject.registerClass({
             button_label: _('Undo'),
         }), {
             'button-clicked': () =>
-                this.#data.addAnnotation(annotation)
+                this.#data.addAnnotation(annotation),
         }))
     }
     #showSelection({ type, value, text, content, lang, pos: { point, dir } }) {
@@ -1114,6 +1114,23 @@ export const BookViewer = GObject.registerClass({
         this.#aiPanel = new AIChatPanel()
         this._ai_panel_box.append(this.#aiPanel)
 
+        // Connect context request signals
+        this.#aiPanel.connect('request-chapter-context', () => {
+            this.#getChapterContent().then(text => {
+                if (text) {
+                    this.#aiPanel.setManualContext(text, 'chapter')
+                }
+            }).catch(e => console.debug('Failed to get chapter content:', e))
+        })
+
+        this.#aiPanel.connect('request-page-context', () => {
+            this.#getPageContent().then(text => {
+                if (text) {
+                    this.#aiPanel.setManualContext(text, 'page')
+                }
+            }).catch(e => console.debug('Failed to get page content:', e))
+        })
+
         // Bind AI panel visibility to revealer
         this._ai_panel_button.connect('toggled', button => {
             const headerBar = this._headerbar_revealer.get_child()
@@ -1124,7 +1141,7 @@ export const BookViewer = GObject.registerClass({
 
                     this.#aiPanel.setupHeaderWidgets(
                         this._view_menu_button,
-                        this._fullscreen_button
+                        this._fullscreen_button,
                     )
                 }
                 this._ai_panel_revealer.visible = true
@@ -1205,7 +1222,7 @@ export const BookViewer = GObject.registerClass({
                 dragStartWidth = this._ai_panel_box.width_request || MIN_PANEL_WIDTH
             }
         })
-        aiResizeGesture.connect('drag-update', (gesture, offsetX, offsetY) => {
+        aiResizeGesture.connect('drag-update', (gesture, offsetX) => {
             // Dragging left (negative offsetX) should increase width
             // Dragging right (positive offsetX) should decrease width
             const newWidth = Math.round(dragStartWidth - offsetX)
@@ -1274,6 +1291,87 @@ export const BookViewer = GObject.registerClass({
             return text || ''
         } catch (e) {
             console.debug('Could not get visible text:', e)
+            return ''
+        }
+    }
+
+    async #getChapterContent() {
+        try {
+            // Get the entire current chapter/section content
+            const text = await this._view.webView.eval(`
+                (() => {
+                    const view = globalThis.reader?.view
+                    if (!view) return ''
+                    
+                    // Get all content from current section
+                    const renderer = view.renderer
+                    if (!renderer) return ''
+                    
+                    const contents = renderer.getContents?.()
+                    if (!contents || !contents.length) return ''
+                    
+                    let text = ''
+                    for (const { doc } of contents) {
+                        if (doc?.body) {
+                            text += doc.body.innerText + '\\n\\n'
+                        }
+                    }
+                    
+                    // Return more content for chapter (up to 20k chars)
+                    return text.substring(0, 20000)
+                })()
+            `)
+            return text || ''
+        } catch (e) {
+            console.debug('Could not get chapter content:', e)
+            return ''
+        }
+    }
+
+    async #getPageContent() {
+        try {
+            // Get only the currently visible page content
+            const text = await this._view.webView.eval(`
+                (() => {
+                    const view = globalThis.reader?.view
+                    if (!view) return ''
+                    
+                    const renderer = view.renderer
+                    if (!renderer) return ''
+                    
+                    // Try to get just visible content
+                    const contents = renderer.getContents?.()
+                    if (!contents || !contents.length) return ''
+                    
+                    // For paginated view, get the visible viewport content
+                    const container = renderer.container || renderer.element
+                    if (!container) {
+                        // Fallback to first content body
+                        const firstDoc = contents[0]?.doc
+                        return firstDoc?.body?.innerText?.substring(0, 5000) || ''
+                    }
+                    
+                    // Get text from visible area
+                    let text = ''
+                    for (const { doc } of contents) {
+                        if (doc?.body) {
+                            // Get visible text based on current scroll position
+                            const body = doc.body
+                            const rect = body.getBoundingClientRect()
+                            const viewportHeight = window.innerHeight || doc.documentElement.clientHeight
+                            
+                            // Simple approach: get all text but limit it
+                            text += body.innerText + '\\n\\n'
+                        }
+                    }
+                    
+                    // Limit to ~5k chars for a single page
+                    return text.substring(0, 5000)
+                })()
+            `)
+            return text || ''
+        } catch (e) {
+            console.debug('Could not get page content:', e)
             return ''
         }
     }
