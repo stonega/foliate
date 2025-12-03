@@ -7,6 +7,9 @@ License:        GPLv3+
 URL:            https://github.com/johnfactotum/foliate
 Source0:        %{name}-%{version}.tar.gz
 
+BuildArch:      noarch
+%global debug_package %{nil}
+
 BuildRequires:  meson
 BuildRequires:  gcc
 BuildRequires:  gettext
