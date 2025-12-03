@@ -659,6 +659,7 @@ export class AIChatService {
 export const aiChatService = new AIChatService()
 
 // Main AI Chat Panel Widget
+let cssLoaded = false
 export const AIChatPanel = GObject.registerClass({
     GTypeName: 'FoliateAIChatPanelFixed',
     Template: Gio.File.new_for_uri(import.meta.url).get_parent().get_child('ui').get_child('ai-chat-panel.ui').get_uri(),
@@ -691,6 +692,22 @@ export const AIChatPanel = GObject.registerClass({
 
     constructor(params) {
         super(params)
+
+        if (!cssLoaded) {
+            const provider = new Gtk.CssProvider()
+            provider.load_from_data(`
+                .chat-input-container {
+                    border-radius: 12px;
+                }
+            `, -1)
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(),
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+            cssLoaded = true
+        }
+
         this.#settings = utils.settings('ai')
         this.#chatService = aiChatService
 

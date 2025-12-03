@@ -10,11 +10,11 @@
       <child>
         <object class="GtkBox" id="header-box">
           <property name="orientation">horizontal</property>
-          <property name="margin-start">12</property>
-          <property name="margin-end">12</property>
-          <property name="margin-top">8</property>
-          <property name="margin-bottom">8</property>
-          <property name="spacing">8</property>
+          <property name="margin-start">4</property>
+          <property name="margin-end">4</property>
+          <property name="margin-top">4</property>
+          <property name="margin-bottom">4</property>
+          <property name="spacing">4</property>
           <child>
             <object class="GtkBox">
               <property name="hexpand">True</property>
@@ -74,6 +74,7 @@
   <!-- Chat messages area -->
   <child>
     <object class="GtkScrolledWindow" id="scroll-window">
+      <property name="width-request">50</property>
       <property name="vexpand">True</property>
       <property name="hexpand">True</property>
       <property name="hscrollbar-policy">never</property>
@@ -130,6 +131,7 @@
           <property name="hscrollbar-policy">never</property>
           <style>
             <class name="entry"/>
+            <class name="chat-input-container"/>
           </style>
           <child>
             <object class="GtkTextView" id="message-view">

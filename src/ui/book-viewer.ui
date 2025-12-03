@@ -684,21 +684,13 @@
               <property name="reveal-child">False</property>
               <property name="visible">False</property>
               <child>
-                <object class="GtkBox" id="ai-panel-container">
-                  <property name="orientation">horizontal</property>
-                  
-                  <!-- Resize handle -->
-                  <child>
-                    <object class="GtkSeparator"/>
-                  </child>
-                  <child>
+                <object class="GtkOverlay" id="ai-panel-overlay">
+                  <child type="overlay">
                     <object class="GtkBox" id="ai-resize-handle">
                       <property name="width-request">4</property>
                       <property name="halign">start</property>
                     </object>
                   </child>
-                  
-                  <!-- AI Chat Panel -->
                   <child>
                     <object class="GtkBox" id="ai-panel-box">
                       <property name="orientation">vertical</property>
