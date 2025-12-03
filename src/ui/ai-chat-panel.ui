@@ -2,7 +2,7 @@
 <interface>
 <template class="FoliateAIChatPanelFixed" parent="GtkBox">
   <property name="orientation">vertical</property>
-  <property name="width-request">200</property>
+  <property name="hexpand">False</property>
   
   <!-- Header -->
   <child>
@@ -74,14 +74,15 @@
   <!-- Chat messages area -->
   <child>
     <object class="GtkScrolledWindow" id="scroll-window">
-      <property name="width-request">50</property>
       <property name="vexpand">True</property>
-      <property name="hexpand">True</property>
+      <property name="hexpand">False</property>
       <property name="hscrollbar-policy">never</property>
+      <property name="propagate-natural-width">False</property>
       <child>
         <object class="GtkBox" id="chat-list">
           <property name="orientation">vertical</property>
           <property name="spacing">0</property>
+          <property name="hexpand">False</property>
         </object>
       </child>
     </object>
@@ -121,11 +122,12 @@
       <property name="margin-top">8</property>
       <property name="margin-bottom">8</property>
       <property name="spacing">8</property>
+      <property name="hexpand">False</property>
       <child>
         <object class="GtkScrolledWindow">
-          <property name="width-request">50</property>
           <property name="hexpand">True</property>
           <property name="propagate-natural-height">True</property>
+          <property name="propagate-natural-width">False</property>
           <property name="max-content-height">150</property>
           <property name="vscrollbar-policy">automatic</property>
           <property name="hscrollbar-policy">never</property>
