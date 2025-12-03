@@ -896,10 +896,11 @@ export const AIChatPanel = GObject.registerClass({
     #createMessageRow(message) {
         const row = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
-            margin_start: 12,
-            margin_end: 12,
-            margin_top: 6,
-            margin_bottom: 6,
+            margin_start: 8,
+            margin_end: 8,
+            margin_top: 4,
+            margin_bottom: 4,
+            hexpand: false,
         })
 
         const isUser = message.role === 'user'
@@ -910,7 +911,8 @@ export const AIChatPanel = GObject.registerClass({
             label: isUser ? _('You') : _('AI Assistant'),
             xalign: isUser ? 1 : 0,
             css_classes: ['caption', 'dim-label'],
-            margin_bottom: 4,
+            margin_bottom: 2,
+            hexpand: false,
         })
         row.append(roleLabel)
 
@@ -918,6 +920,7 @@ export const AIChatPanel = GObject.registerClass({
         const contentBox = new Gtk.Box({
             css_classes: ['card', isError ? 'error-message' : (isUser ? 'user-message' : 'assistant-message')],
             halign: isUser ? Gtk.Align.END : Gtk.Align.START,
+            hexpand: false,
         })
 
         const contentLabel = new Gtk.Label({
@@ -926,11 +929,12 @@ export const AIChatPanel = GObject.registerClass({
             wrap_mode: 2, // WORD_CHAR
             xalign: 0,
             selectable: true,
-            margin_start: 12,
-            margin_end: 12,
-            margin_top: 8,
-            margin_bottom: 8,
-            max_width_chars: 50,
+            margin_start: 10,
+            margin_end: 10,
+            margin_top: 6,
+            margin_bottom: 6,
+            hexpand: false,
+            // Use natural wrap width, don't set max-width-chars to avoid expanding
         })
         contentBox.append(contentLabel)
         row.append(contentBox)

@@ -1167,6 +1167,12 @@ export const BookViewer = GObject.registerClass({
             this.ai_panel_visible = button.active
         })
 
+        // Resize handle for AI panel (on the left side of the panel)
+        this._ai_resize_handle.cursor = Gdk.Cursor.new_from_name('col-resize', null)
+        const MIN_PANEL_WIDTH = 280
+        const MAX_PANEL_WIDTH = 600
+        const DEFAULT_PANEL_WIDTH = 320
+
         // Load saved visibility state
         this.#aiSettings = utils.settings('ai')
         if (this.#aiSettings) {
@@ -1180,34 +1186,40 @@ export const BookViewer = GObject.registerClass({
                 this._ai_panel_revealer.visible = false
             }
 
-            // Apply saved width
-            const width = this.#aiSettings.get_int('panel-width')
-            if (width > 0) {
-                this._ai_panel_box.width_request = width
-            }
+            // Apply saved width with constraints
+            const savedWidth = this.#aiSettings.get_int('panel-width')
+            const width = savedWidth > 0 
+                ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, savedWidth))
+                : DEFAULT_PANEL_WIDTH
+            this._ai_panel_box.width_request = width
+        } else {
+            this._ai_panel_box.width_request = DEFAULT_PANEL_WIDTH
         }
-
-        // Resize handle
-        this._ai_resize_handle.cursor = Gdk.Cursor.new_from_name('col-resize', null)
-        let startWidth
-        let minWidth = 200
-        this._ai_resize_handle.add_controller(utils.connect(new Gtk.GestureDrag(), {
-            'drag-begin': () => {
-                startWidth = this._ai_panel_box.get_width()
-                const [min,] = this.#aiPanel.measure(Gtk.Orientation.HORIZONTAL, -1)
-                minWidth = Math.max(200, min)
-            },
-            'drag-update': (_, x) => {
-                const sidebarWidth = startWidth - x
-                const newWidth = Math.max(minWidth, sidebarWidth)
-                if (this._ai_panel_box.width_request !== newWidth) {
-                    this._ai_panel_box.width_request = newWidth
-                }
-            },
-            'drag-end': () => {
-                this.#aiSettings?.set_int('panel-width', this._ai_panel_box.width_request)
-            },
-        }))
+        let dragStartWidth = 0
+        
+        const aiResizeGesture = new Gtk.GestureDrag()
+        aiResizeGesture.connect('drag-begin', () => {
+            // Capture the current width at drag start
+            dragStartWidth = this._ai_panel_box.get_allocated_width()
+            if (dragStartWidth < MIN_PANEL_WIDTH) {
+                dragStartWidth = this._ai_panel_box.width_request || MIN_PANEL_WIDTH
+            }
+        })
+        aiResizeGesture.connect('drag-update', (gesture, offsetX, offsetY) => {
+            // Dragging left (negative offsetX) should increase width
+            // Dragging right (positive offsetX) should decrease width
+            const newWidth = Math.round(dragStartWidth - offsetX)
+            const clampedWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, newWidth))
+            this._ai_panel_box.width_request = clampedWidth
+        })
+        aiResizeGesture.connect('drag-end', () => {
+            // Save the final width
+            const finalWidth = this._ai_panel_box.width_request
+            if (finalWidth >= MIN_PANEL_WIDTH) {
+                this.#aiSettings?.set_int('panel-width', finalWidth)
+            }
+        })
+        this._ai_resize_handle.add_controller(aiResizeGesture)
 
         // Save visibility state on change
         this.connect('notify::ai-panel-visible', () => {
