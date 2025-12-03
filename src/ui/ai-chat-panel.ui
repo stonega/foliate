@@ -16,8 +16,11 @@
           <property name="margin-bottom">4</property>
           <property name="spacing">4</property>
           <child>
-            <object class="GtkBox">
+            <object class="GtkLabel">
+              <property name="label" translatable="yes">AI Chat</property>
               <property name="hexpand">True</property>
+              <property name="xalign">0</property>
+              <style><class name="title"/></style>
             </object>
           </child>
           <child>
