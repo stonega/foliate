@@ -415,17 +415,29 @@ export const AIModel = GObject.registerClass({
 // AI Models Manager - handles model storage and retrieval
 export class AIModelsManager {
     #settings
+    #storage
     #models = []
 
     constructor() {
         this.#settings = utils.settings('ai')
+        if (!this.#settings) {
+            // Fallback to file storage if settings schema is missing
+            const path = GLib.build_filenamev([GLib.get_user_data_dir(), pkg.name])
+            GLib.mkdir_with_parents(path, 0o755)
+            this.#storage = new utils.JSONStorage(path, 'ai-models', 2)
+        }
         this.#loadModels()
     }
 
     #loadModels() {
         try {
-            const json = this.#settings?.get_string('models') ?? '[]'
-            const data = JSON.parse(json)
+            let data = []
+            if (this.#settings) {
+                const json = this.#settings.get_string('models')
+                data = JSON.parse(json)
+            } else if (this.#storage) {
+                data = this.#storage.get('models', [])
+            }
             this.#models = data.map(m => AIModel.fromJSON(m))
         } catch (e) {
             console.error('Failed to load AI models:', e)
@@ -435,8 +447,13 @@ export class AIModelsManager {
 
     #saveModels() {
         try {
-            const json = JSON.stringify(this.#models.map(m => m.toJSON()))
-            this.#settings?.set_string('models', json)
+            const rawData = this.#models.map(m => m.toJSON())
+            if (this.#settings) {
+                const json = JSON.stringify(rawData)
+                this.#settings.set_string('models', json)
+            } else if (this.#storage) {
+                this.#storage.set('models', rawData)
+            }
         } catch (e) {
             console.error('Failed to save AI models:', e)
         }
@@ -451,7 +468,13 @@ export class AIModelsManager {
     }
 
     getDefaultModel() {
-        const defaultId = this.#settings?.get_string('default-model')
+        let defaultId
+        if (this.#settings) {
+            defaultId = this.#settings.get_string('default-model')
+        } else if (this.#storage) {
+            defaultId = this.#storage.get('default-model')
+        }
+
         if (defaultId) {
             const model = this.getModel(defaultId)
             if (model) return model
@@ -460,7 +483,12 @@ export class AIModelsManager {
     }
 
     setDefaultModel(id) {
-        this.#settings?.set_string('default-model', id)
+        if (this.#settings) {
+            this.#settings.set_string('default-model', id)
+        } else if (this.#storage) {
+            this.#storage.set('default-model', id)
+        }
+
         // Update is_default flags
         for (const model of this.#models) {
             model.is_default = model.id === id
@@ -544,7 +572,15 @@ export class AIChatService {
             max_tokens: 2048,
         }
 
-        const message = Soup.Message.new('POST', model.endpoint)
+        let endpoint = model.endpoint
+        if (!endpoint.endsWith('/chat/completions')) {
+            if (!endpoint.endsWith('/')) {
+                endpoint += '/'
+            }
+            endpoint += 'chat/completions'
+        }
+
+        const message = Soup.Message.new('POST', endpoint)
         if (!message) {
             throw new Error(_('Invalid API endpoint URL'))
         }
@@ -633,10 +669,13 @@ export const AIChatPanel = GObject.registerClass({
     Signals: {
         'toggle-panel': {},
         'open-settings': {},
+        'close': {},
     },
     InternalChildren: [
-        'chat-list', 'message-entry', 'send-button',
-        'new-chat-button', 'settings-button', 'history-button',
+        'header-box',
+        'chat-list', 'message-view', 'send-button',
+        'new-chat-button', 'history-button',
+        'close-button',
         'loading-spinner', 'status-label',
         'model-label', 'scroll-window',
     ],
@@ -646,27 +685,27 @@ export const AIChatPanel = GObject.registerClass({
     #chatService
     #currentSession = null
 
+    get headerBox() {
+        return this._header_box
+    }
+
     constructor(params) {
         super(params)
         this.#settings = utils.settings('ai')
         this.#chatService = aiChatService
 
         // Setup message list
-        this._chat_list.set_selection_mode(Gtk.SelectionMode.NONE)
 
         // Connect signals
         this._send_button.connect('clicked', () => this.#sendMessage())
         this._new_chat_button.connect('clicked', () => this.#startNewChat())
-        this._settings_button.connect('clicked', () => this.emit('open-settings'))
         this._history_button.connect('clicked', () => this.#showHistoryDialog())
-
-        // Entry key handling
-        this._message_entry.connect('activate', () => this.#sendMessage())
+        this._close_button.connect('clicked', () => this.emit('close'))
 
         // Multi-line support with Ctrl+Enter to send
         const keyController = new Gtk.EventControllerKey()
         keyController.connect('key-pressed', (_, keyval, keycode, state) => {
-            if (keyval === 65293) { // Return key
+            if (keyval === 65293 || keyval === 65421) { // Return or KP_Enter
                 if (state & Gdk.ModifierType.SHIFT_MASK) {
                     // Allow Shift+Enter for new line
                     return false
@@ -676,7 +715,7 @@ export const AIChatPanel = GObject.registerClass({
             }
             return false
         })
-        this._message_entry.add_controller(keyController)
+        this._message_view.add_controller(keyController)
 
         // Update model label
         this.#updateModelLabel()
@@ -761,7 +800,9 @@ export const AIChatPanel = GObject.registerClass({
     }
 
     async #sendMessage() {
-        const text = this._message_entry.text.trim()
+        const buffer = this._message_view.buffer
+        const [start, end] = buffer.get_bounds()
+        const text = buffer.get_text(start, end, true).trim()
         if (!text) return
 
         const model = aiModelsManager.getDefaultModel()
@@ -771,7 +812,7 @@ export const AIChatPanel = GObject.registerClass({
         }
 
         // Clear input
-        this._message_entry.text = ''
+        buffer.text = ''
 
         // Add user message
         const userMessage = new AIMessage({
@@ -893,7 +934,7 @@ export const AIChatPanel = GObject.registerClass({
         this._loading_spinner.visible = loading
         this._loading_spinner.spinning = loading
         this._send_button.sensitive = !loading
-        this._message_entry.sensitive = !loading
+        this._message_view.sensitive = !loading
 
         if (loading) {
             this._status_label.label = _('AI is thinking…')
@@ -901,6 +942,12 @@ export const AIChatPanel = GObject.registerClass({
         } else {
             this._status_label.visible = false
         }
+    }
+
+    setupHeaderWidgets(toggle, menu, fullscreen) {
+        this._header_box.prepend(toggle)
+        this._header_box.insert_child_after(menu, this._history_button)
+        this._header_box.insert_child_after(fullscreen, menu)
     }
 
     clearChat() {
@@ -926,10 +973,12 @@ export const AIChatPanel = GObject.registerClass({
 
     setInputText(text) {
         // Set the text in the input field
-        this._message_entry.text = text
+        this._message_view.buffer.text = text
         // Focus the input field
-        this._message_entry.grab_focus()
+        this._message_view.grab_focus()
         // Position cursor at the end
-        this._message_entry.set_position(-1)
+        const buffer = this._message_view.buffer
+        const iter = buffer.get_end_iter()
+        buffer.place_cursor(iter)
     }
 })

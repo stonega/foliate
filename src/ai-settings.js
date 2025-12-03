@@ -9,7 +9,7 @@ import * as utils from './utils.js'
 import { AIModel, aiModelsManager, aiChatService } from './ai-chat.js'
 
 // Individual model row widget
-const AIModelRow = GObject.registerClass({
+export const AIModelRow = GObject.registerClass({
     GTypeName: 'FoliateAIModelRow',
     Signals: {
         'edit-model': { param_types: [GObject.TYPE_JSOBJECT] },
@@ -94,7 +94,7 @@ const AIModelRow = GObject.registerClass({
 })
 
 // Model editor dialog
-const AIModelEditorDialog = GObject.registerClass({
+export const AIModelEditorDialog = GObject.registerClass({
     GTypeName: 'FoliateAIModelEditorDialog',
     Template: pkg.moduleuri('ui/ai-model-editor.ui'),
     InternalChildren: [
@@ -199,14 +199,17 @@ const AIModelEditorDialog = GObject.registerClass({
     }
 
     #buildModel() {
-        return new AIModel({
-            id: this.#model?.id || undefined,
+        const params = {
             name: this._name_entry.text.trim(),
             endpoint: this._endpoint_entry.text.trim(),
             api_key: this._api_key_entry.text.trim(),
             model_identifier: this._model_id_entry.text.trim(),
             is_default: this._default_switch.active,
-        })
+        }
+        if (this.#model?.id) {
+            params.id = this.#model.id
+        }
+        return new AIModel(params)
     }
 
     #save() {

@@ -555,9 +555,10 @@
                             </object>
                           </child>
                           <child type="end">
-                            <object class="GtkMenuButton">
+                            <object class="GtkMenuButton" id="view-menu-button">
                               <property name="icon-name">view-more-symbolic</property>
                               <property name="tooltip-text" translatable="yes">View Menu</property>
+                              <style><class name="flat"/></style>
                               <property name="popover">
                                 <object class="GtkPopoverMenu" id="view-popover">
                                   <property name="menu-model">view-menu</property>
@@ -634,16 +635,18 @@
                             </object>
                           </child>
                           <child type="end">
-                            <object class="GtkToggleButton">
+                            <object class="GtkToggleButton" id="fullscreen-button">
                               <property name="icon-name">view-fullscreen-symbolic</property>
                               <property name="action-name">win.fullscreened</property>
                               <property name="tooltip-text" translatable="yes">Fullscreen</property>
+                              <style><class name="flat"/></style>
                             </object>
                           </child>
                           <child type="end">
                             <object class="GtkToggleButton" id="ai-panel-button">
-                              <property name="icon-name">user-available-symbolic</property>
+                              <property name="icon-name">sidebar-show-right-symbolic</property>
                               <property name="tooltip-text" translatable="yes">AI Chat Panel</property>
+                              <style><class name="flat"/></style>
                             </object>
                           </child>
                         </object>
@@ -679,6 +682,7 @@
             <object class="GtkRevealer" id="ai-panel-revealer">
               <property name="transition-type">slide-left</property>
               <property name="reveal-child">False</property>
+              <property name="visible">False</property>
               <child>
                 <object class="GtkBox" id="ai-panel-container">
                   <property name="orientation">horizontal</property>

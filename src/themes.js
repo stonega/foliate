@@ -104,6 +104,9 @@ themeCssProvider.load_from_data(`
         .${id} popover highlight, .is-dark .${id} popover highlight {
             background: @accent_bg_color;
         }
+        .sidebar-${id} scrolledwindow, .sidebar-${id} viewport {
+            background: transparent;
+        }
     `
 }).join(''), -1)
 

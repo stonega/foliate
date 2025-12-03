@@ -21,8 +21,8 @@ import { ImageViewer } from './image-viewer.js'
 import { formatLanguageMap, formatAuthors, makeBookInfoWindow } from './book-info.js'
 import { themes, invertTheme, themeCssProvider } from './themes.js'
 import { dataStore } from './data.js'
-import { AIChatPanel } from './ai-chat.js'
-import { AISettingsDialog } from './ai-settings.js'
+import { AIChatPanel, aiModelsManager } from './ai-chat.js'
+import { AIModelRow, AIModelEditorDialog } from './ai-settings.js'
 
 // for use in the WebView
 const uiText = {
@@ -90,6 +90,8 @@ const ViewPreferencesWindow = GObject.registerClass({
         'max-inline-size', 'max-block-size', 'max-column-count',
         'theme-flow-box',
         'reduce-animation',
+        'ai-page', 'models-list', 'add-model-button',
+        'include-context-switch', 'context-length-spin', 'empty-state',
     ],
 }, class extends Adw.PreferencesDialog {
     constructor(params) {
@@ -142,6 +144,73 @@ const ViewPreferencesWindow = GObject.registerClass({
             else this.remove_css_class('is-dark')
         })
         this.connect('destroy', () => styleManager.disconnect(handler))
+
+        // AI Settings
+        this.aiSettings = utils.settings('ai')
+        if (this.aiSettings) {
+            this.aiSettings.bind('include-context', this._include_context_switch, 'active',
+                Gio.SettingsBindFlags.DEFAULT)
+            this.aiSettings.bind('context-length', this._context_length_spin, 'value',
+                Gio.SettingsBindFlags.DEFAULT)
+        }
+        this._add_model_button.connect('clicked', () => this.#showModelEditor())
+        this.#loadModels()
+    }
+
+    #loadModels() {
+        // Clear existing rows
+        let child = this._models_list.get_first_child()
+        while (child) {
+            const next = child.get_next_sibling()
+            if (child instanceof AIModelRow) {
+                this._models_list.remove(child)
+            }
+            child = next
+        }
+
+        const models = aiModelsManager.models
+
+        // Show empty state or models list
+        this._empty_state.visible = models.length === 0
+
+        for (const model of models) {
+            const row = new AIModelRow(model)
+            row.connect('edit-model', (_, m) => this.#showModelEditor(m))
+            row.connect('delete-model', (_, id) => this.#deleteModel(id))
+            row.connect('set-default', (_, id) => this.#setDefaultModel(id))
+            this._models_list.append(row)
+        }
+    }
+
+    #showModelEditor(model = null) {
+        const dialog = new AIModelEditorDialog()
+        if (model) {
+            dialog.loadModel(model)
+        }
+        dialog.connect('closed', () => this.#loadModels())
+        dialog.present(this)
+    }
+
+    #deleteModel(id) {
+        const dialog = new Adw.AlertDialog({
+            heading: _('Delete Model?'),
+            body: _('This action cannot be undone.'),
+        })
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('delete', _('Delete'))
+        dialog.set_response_appearance('delete', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.connect('response', (_, response) => {
+            if (response === 'delete') {
+                aiModelsManager.deleteModel(id)
+                this.#loadModels()
+            }
+        })
+        dialog.present(this)
+    }
+
+    #setDefaultModel(id) {
+        aiModelsManager.setDefaultModel(id)
+        this.#loadModels()
     }
 })
 
@@ -461,7 +530,7 @@ export const BookViewer = GObject.registerClass({
         'view', 'flap', 'breakpoint-bin', 'sidebar', 'resize-handle',
         'headerbar-revealer', 'navbar-revealer',
         'book-menu-button', 'bookmark-button',
-        'view-popover', 'zoom-button',
+        'view-popover', 'zoom-button', 'view-menu-button',
         'navbar',
         'library-button', 'pin-button', 'sidebar-stack',
         'contents-stack', 'contents-stack-switcher',
@@ -470,7 +539,7 @@ export const BookViewer = GObject.registerClass({
         'annotation-stack', 'annotation-view', 'annotation-search-entry',
         'bookmark-stack', 'bookmark-view',
         'book-info', 'book-cover', 'book-title', 'book-author',
-        'ai-panel-revealer', 'ai-panel-box', 'ai-panel-button', 'ai-resize-handle',
+        'ai-panel-revealer', 'ai-panel-box', 'ai-panel-button', 'ai-resize-handle', 'fullscreen-button',
     ],
 }, class extends Gtk.Overlay {
     #file
@@ -521,10 +590,12 @@ export const BookViewer = GObject.registerClass({
             const name = theme.id
             if (lastThemeClass) {
                 this._sidebar.parent.remove_css_class('sidebar-' + lastThemeClass)
+                this._ai_panel_box.remove_css_class('sidebar-' + lastThemeClass)
                 this._headerbar_revealer.get_first_child().remove_css_class(lastThemeClass)
                 this._navbar_revealer.get_first_child().remove_css_class(lastThemeClass)
             }
             this._sidebar.parent.add_css_class('sidebar-' + name)
+            this._ai_panel_box.add_css_class('sidebar-' + name)
             this._headerbar_revealer.get_first_child().add_css_class(name)
             this._navbar_revealer.get_first_child().add_css_class(name)
             lastThemeClass = name
@@ -1042,7 +1113,54 @@ export const BookViewer = GObject.registerClass({
 
         // Bind AI panel visibility to revealer
         this._ai_panel_button.connect('toggled', button => {
-            this._ai_panel_revealer.reveal_child = button.active
+            const headerBar = this._headerbar_revealer.get_child()
+            if (button.active) {
+                if (this.#aiPanel && this.#aiPanel.headerBox) {
+                    this._view_menu_button.unparent()
+                    this._ai_panel_button.unparent()
+                    this._fullscreen_button.unparent()
+                    
+                    this.#aiPanel.setupHeaderWidgets(
+                        this._ai_panel_button,
+                        this._view_menu_button,
+                        this._fullscreen_button
+                    )
+                }
+                this._ai_panel_revealer.visible = true
+                this._ai_panel_revealer.reveal_child = true
+                if (headerBar) {
+                    headerBar.show_end_title_buttons = false
+                    headerBar.show_start_title_buttons = false
+                }
+            } else {
+                this._ai_panel_revealer.reveal_child = false
+                // Hide widget after animation to prevent layout issues
+                const duration = this._ai_panel_revealer.transition_duration
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, duration + 50, () => {
+                    if (!this._ai_panel_revealer.reveal_child) {
+                        this._ai_panel_revealer.visible = false
+                        this._view.queue_resize()
+                    }
+                    return GLib.SOURCE_REMOVE
+                })
+                
+                if (this.#aiPanel && this.#aiPanel.headerBox) {
+                    this._view_menu_button.unparent()
+                    this._ai_panel_button.unparent()
+                    this._fullscreen_button.unparent()
+                    
+                    if (headerBar) {
+                        headerBar.pack_end(this._fullscreen_button)
+                        headerBar.pack_end(this._ai_panel_button)
+                        headerBar.pack_end(this._view_menu_button)
+                    }
+                }
+
+                if (headerBar) {
+                    headerBar.show_end_title_buttons = true
+                    headerBar.show_start_title_buttons = true
+                }
+            }
             this.ai_panel_visible = button.active
         })
 
@@ -1051,7 +1169,13 @@ export const BookViewer = GObject.registerClass({
         if (this.#aiSettings) {
             const visible = this.#aiSettings.get_boolean('panel-visible')
             this._ai_panel_button.active = visible
-            this._ai_panel_revealer.reveal_child = visible
+            if (visible) {
+                this._ai_panel_revealer.visible = true
+                this._ai_panel_revealer.reveal_child = true
+            } else {
+                this._ai_panel_revealer.reveal_child = false
+                this._ai_panel_revealer.visible = false
+            }
 
             // Apply saved width
             const width = this.#aiSettings.get_int('panel-width')
@@ -1060,36 +1184,49 @@ export const BookViewer = GObject.registerClass({
             }
         }
 
+        // Resize handle
+        this._ai_resize_handle.cursor = Gdk.Cursor.new_from_name('col-resize', null)
+        let startWidth
+        let minWidth = 200
+        this._ai_resize_handle.add_controller(utils.connect(new Gtk.GestureDrag(), {
+            'drag-begin': () => {
+                startWidth = this._ai_panel_box.get_width()
+                const [min, ] = this.#aiPanel.measure(Gtk.Orientation.HORIZONTAL, -1)
+                minWidth = Math.max(50, min)
+            },
+            'drag-update': (_, x) => {
+                const sidebarWidth = startWidth - x
+                this._ai_panel_box.width_request = Math.max(minWidth, sidebarWidth)
+            },
+            'drag-end': () => {
+                this.#aiSettings?.set_int('panel-width', this._ai_panel_box.width_request)
+            },
+        }))
+
         // Save visibility state on change
         this.connect('notify::ai-panel-visible', () => {
             this.#aiSettings?.set_boolean('panel-visible', this.ai_panel_visible)
         })
 
-        // Setup resize handle for AI panel
-        this._ai_resize_handle.cursor = Gdk.Cursor.new_from_name('col-resize', null)
-        this._ai_resize_handle.add_controller(utils.connect(new Gtk.GestureDrag(), {
-            'drag-update': (_, x) => {
-                const currentWidth = this._ai_panel_box.get_width()
-                const newWidth = Math.max(280, Math.min(600, currentWidth - x))
-                this._ai_panel_box.width_request = newWidth
-            },
-            'drag-end': () => {
-                // Save width on drag end
-                this.#aiSettings?.set_int('panel-width', this._ai_panel_box.width_request)
-            },
-        }))
-
         // Connect AI panel settings button
         this.#aiPanel.connect('open-settings', () => this.#showAISettings())
+        this.#aiPanel.connect('close', () => {
+            const win = this.root
+            if (win && win.close) win.close()
+        })
     }
 
     #showAISettings() {
-        const dialog = new AISettingsDialog()
-        dialog.connect('closed', () => {
+        const win = new ViewPreferencesWindow({
+            view_settings: this._view.viewSettings,
+            font_settings: this._view.fontSettings,
+        })
+        win.set_visible_page(win._ai_page)
+        win.connect('closed', () => {
             // Refresh model label in chat panel
             this.#aiPanel.refreshModelLabel()
         })
-        dialog.present(this.root)
+        win.present(this.root)
     }
 
     #updateAIContext() {

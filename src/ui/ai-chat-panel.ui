@@ -2,11 +2,11 @@
 <interface>
 <template class="FoliateAIChatPanel" parent="GtkBox">
   <property name="orientation">vertical</property>
-  <property name="width-request">280</property>
+  <property name="width-request">200</property>
   
   <!-- Header -->
   <child>
-    <object class="GtkBox">
+    <object class="GtkBox" id="header-box">
       <property name="orientation">horizontal</property>
       <property name="margin-start">12</property>
       <property name="margin-end">12</property>
@@ -14,17 +14,8 @@
       <property name="margin-bottom">8</property>
       <property name="spacing">8</property>
       <child>
-        <object class="GtkImage">
-          <property name="icon-name">user-available-symbolic</property>
-          <style><class name="accent"/></style>
-        </object>
-      </child>
-      <child>
-        <object class="GtkLabel">
-          <property name="label" translatable="yes">AI Assistant</property>
+        <object class="GtkBox">
           <property name="hexpand">True</property>
-          <property name="xalign">0</property>
-          <style><class name="heading"/></style>
         </object>
       </child>
       <child>
@@ -42,10 +33,10 @@
         </object>
       </child>
       <child>
-        <object class="GtkButton" id="settings-button">
-          <property name="icon-name">emblem-system-symbolic</property>
-          <property name="tooltip-text" translatable="yes">AI Settings</property>
-          <style><class name="flat"/><class name="circular"/></style>
+        <object class="GtkButton" id="close-button">
+          <property name="icon-name">window-close-symbolic</property>
+          <property name="tooltip-text" translatable="yes">Close App</property>
+          <style><class name="circular"/></style>
         </object>
       </child>
     </object>
@@ -136,11 +127,26 @@
       <property name="margin-bottom">8</property>
       <property name="spacing">8</property>
       <child>
-        <object class="GtkEntry" id="message-entry">
+        <object class="GtkScrolledWindow">
           <property name="hexpand">True</property>
-          <property name="placeholder-text" translatable="yes">Ask AI about this book…</property>
-          <property name="secondary-icon-name">edit-clear-symbolic</property>
-          <property name="secondary-icon-tooltip-text" translatable="yes">Clear</property>
+          <property name="propagate-natural-height">True</property>
+          <property name="max-content-height">150</property>
+          <property name="vscrollbar-policy">automatic</property>
+          <property name="hscrollbar-policy">never</property>
+          <style>
+            <class name="entry"/>
+          </style>
+          <child>
+            <object class="GtkTextView" id="message-view">
+              <property name="hexpand">True</property>
+              <property name="wrap-mode">word-char</property>
+              <property name="accepts-tab">False</property>
+              <property name="left-margin">4</property>
+              <property name="right-margin">4</property>
+              <property name="top-margin">4</property>
+              <property name="bottom-margin">4</property>
+            </object>
+          </child>
         </object>
       </child>
       <child>
