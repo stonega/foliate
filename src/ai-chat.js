@@ -8,6 +8,98 @@ import Soup from 'gi://Soup'
 import { gettext as _ } from 'gettext'
 
 import * as utils from './utils.js'
+import { WebView } from './webview.js'
+
+const CHAT_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="foliate:///foliate-js/vendor/marked.js"></script>
+<style>
+:root {
+    color-scheme: light dark;
+}
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 10px;
+    color: CanvasText;
+    background-color: transparent;
+}
+.message {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 90%;
+    word-wrap: break-word;
+}
+.user {
+    background-color: var(--user-bg, AccentColor);
+    color: var(--user-fg, AccentColorText);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+.assistant {
+    background-color: rgba(127, 127, 127, 0.1);
+    color: CanvasText;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+.error {
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.5);
+    color: CanvasText;
+}
+p { margin: 0 0 0.5em 0; }
+p:last-child { margin-bottom: 0; }
+pre {
+    background-color: rgba(127, 127, 127, 0.1);
+    padding: 8px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+code {
+    font-family: monospace;
+    background-color: rgba(127, 127, 127, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+</style>
+</head>
+<body>
+<div id="messages"></div>
+<script>
+function addMessage(role, content, isError) {
+    const div = document.createElement('div');
+    div.className = 'message ' + role + (isError ? ' error' : '');
+    
+    if (isError) {
+        div.textContent = content;
+    } else {
+        try {
+            div.innerHTML = marked.parse(content);
+        } catch (e) {
+            console.error('Markdown parsing error:', e);
+            div.textContent = content;
+        }
+    }
+    
+    document.getElementById('messages').appendChild(div);
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+function clearMessages() {
+    document.getElementById('messages').innerHTML = '';
+}
+</script>
+</body>
+</html>
+`
 
 // AI Message data class for chat history
 const AIMessage = GObject.registerClass({
@@ -692,6 +784,9 @@ export const AIChatPanel = GObject.registerClass({
     #currentSession = null
     #manualContext = null
 
+    #webView
+    #ready
+
     get headerBox() {
         return this._header_box
     }
@@ -745,30 +840,6 @@ export const AIChatPanel = GObject.registerClass({
                     border-radius: 6px;
                     padding: 4px 8px;
                 }
-                
-                /* Message styling */
-                .user-message {
-                    background-color: @accent_bg_color;
-                    color: @accent_fg_color;
-                    border-radius: 12px 12px 4px 12px;
-                }
-                
-                .assistant-message {
-                    background-color: alpha(@window_bg_color, 0.8);
-                    border: 1px solid alpha(@borders, 0.5);
-                    border-radius: 12px 12px 12px 4px;
-                }
-                
-                .error-message {
-                    background-color: alpha(@error_bg_color, 0.2);
-                    border: 1px solid alpha(@error_bg_color, 0.5);
-                    border-radius: 12px;
-                }
-                
-                /* Header styling */
-                .chat-header {
-                    background-color: alpha(@headerbar_bg_color, 0.95);
-                }
             `, -1)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
@@ -780,6 +851,38 @@ export const AIChatPanel = GObject.registerClass({
 
         this.#settings = utils.settings('ai')
         this.#chatService = aiChatService
+
+        // Replace scroll-window with WebView
+        const prevSibling = this._scroll_window.get_prev_sibling()
+        this.remove(this._scroll_window)
+
+        this.#webView = new WebView({
+            visible: true,
+            hexpand: true,
+            vexpand: true,
+        })
+        this.insert_child_after(this.#webView, prevSibling)
+
+        this.#ready = this.#webView.loadHTML(CHAT_HTML, 'foliate:///ai-chat/')
+
+        // Inject colors
+        const context = this.get_style_context()
+        const [hasBg, bgColor] = context.lookup_color('accent_bg_color')
+        const [hasFg, fgColor] = context.lookup_color('accent_fg_color')
+
+        if (hasBg || hasFg) {
+            let css = ':root {'
+            if (hasBg) css += `--user-bg: ${bgColor.to_string()};`
+            if (hasFg) css += `--user-fg: ${fgColor.to_string()};`
+            css += '}'
+            this.#ready = this.#ready.then(() =>
+                this.#webView.run(`
+                    const style = document.createElement('style');
+                    style.textContent = \`${css}\`;
+                    document.head.appendChild(style);
+                `)
+            )
+        }
 
         // Connect signals
         this._send_button.connect('clicked', () => this.#sendMessage())
@@ -876,7 +979,7 @@ export const AIChatPanel = GObject.registerClass({
         dialog.present(this.get_root())
     }
 
-    #loadSession(sessionId) {
+    async #loadSession(sessionId) {
         const session = chatHistoryManager.getSession(sessionId)
         if (!session) return
 
@@ -886,35 +989,26 @@ export const AIChatPanel = GObject.registerClass({
         }
 
         // Clear current UI
-        this.#clearChatUI()
+        await this.#clearChatUI()
 
         // Load the selected session
         this.#currentSession = session
         this.#messages = []
 
         // Restore messages to UI
+        await this.#ready
         for (const msg of session.messages) {
             this.#messages.push(msg)
-            const row = this.#createMessageRow(msg)
-            this._chat_list.append(row)
+            const content = JSON.stringify(msg.content)
+            const role = msg.role
+            const isError = msg.is_error
+            this.#webView.run(`addMessage('${role}', ${content}, ${isError})`)
         }
-
-        // Scroll to bottom
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            const adj = this._scroll_window.vadjustment
-            adj.value = adj.upper - adj.page_size
-            return false
-        })
     }
 
-    #clearChatUI() {
-        // Remove all children from chat list
-        let child = this._chat_list.get_first_child()
-        while (child) {
-            const next = child.get_next_sibling()
-            this._chat_list.remove(child)
-            child = next
-        }
+    async #clearChatUI() {
+        await this.#ready
+        this.#webView.run('clearMessages()')
         this._status_label.visible = false
     }
 
@@ -992,7 +1086,7 @@ export const AIChatPanel = GObject.registerClass({
         }
     }
 
-    #addMessage(message) {
+    async #addMessage(message) {
         this.#messages.push(message)
 
         // Save to session
@@ -1001,66 +1095,15 @@ export const AIChatPanel = GObject.registerClass({
             chatHistoryManager.updateSession(this.#currentSession)
         }
 
-        // Create message row
-        const row = this.#createMessageRow(message)
-        this._chat_list.append(row)
-
-        // Scroll to bottom
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            const adj = this._scroll_window.vadjustment
-            adj.value = adj.upper - adj.page_size
-            return false
-        })
-    }
-
-    #createMessageRow(message) {
-        const row = new Gtk.Box({
-            orientation: Gtk.Orientation.VERTICAL,
-            margin_start: 8,
-            margin_end: 8,
-            margin_top: 4,
-            margin_bottom: 4,
-            hexpand: false,
-        })
-
-        const isUser = message.role === 'user'
+        // Add to WebView
+        await this.#ready
+        const content = JSON.stringify(message.content)
+        const role = message.role
         const isError = message.is_error
-
-        // Role label
-        const roleLabel = new Gtk.Label({
-            label: isUser ? _('You') : _('AI Assistant'),
-            xalign: isUser ? 1 : 0,
-            css_classes: ['caption', 'dim-label'],
-            margin_bottom: 2,
-            hexpand: false,
-        })
-        row.append(roleLabel)
-
-        // Message content box
-        const contentBox = new Gtk.Box({
-            css_classes: ['card', isError ? 'error-message' : (isUser ? 'user-message' : 'assistant-message')],
-            halign: isUser ? Gtk.Align.END : Gtk.Align.START,
-            hexpand: false,
-        })
-
-        const contentLabel = new Gtk.Label({
-            label: message.content,
-            wrap: true,
-            wrap_mode: 2, // WORD_CHAR
-            xalign: 0,
-            selectable: true,
-            margin_start: 10,
-            margin_end: 10,
-            margin_top: 6,
-            margin_bottom: 6,
-            hexpand: false,
-            // Use natural wrap width, don't set max-width-chars to avoid expanding
-        })
-        contentBox.append(contentLabel)
-        row.append(contentBox)
-
-        return row
+        this.#webView.run(`addMessage('${role}', ${content}, ${isError})`)
     }
+
+
 
     #showError(message) {
         const errorMessage = new AIMessage({
