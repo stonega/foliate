@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          dnf install -y rpm-build rpmdevtools meson gcc gettext \
+          dnf install -y rpm-build rpmdevtools meson gcc gettext tar \
             "pkgconfig(gjs-1.0)" "pkgconfig(gtk4)" "pkgconfig(libadwaita-1)" \
             "pkgconfig(webkitgtk-6.0)" desktop-file-utils libappstream-glib
 
@@ -35,10 +35,8 @@ jobs:
           # Update spec file version
           sed -i "s/Version:        .*/Version:        $VERSION/" .github/packaging/foliate.spec
           
-          # Create tarball
-          # git archive requires safe directory configuration in some environments
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git archive --format=tar.gz --prefix=foliate-$VERSION/ HEAD > foliate-$VERSION.tar.gz
+          # Create tarball including submodules
+          tar --exclude-vcs --transform "s|^|foliate-$VERSION/|" --exclude="foliate-$VERSION.tar.gz" -czf foliate-$VERSION.tar.gz .
           
           # Setup rpmbuild tree
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
