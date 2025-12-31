@@ -1,15 +1,15 @@
 {
-  "name": "foliate",
-  "version": "3.1.1",
+  "name": "foliate.ai",
+  "version": "3.1.2",
   "description": "Read e-books in style",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/johnfactotum/foliate.git"
+    "url": "git+https://github.com/stonega/foliate.ai.git"
   },
-  "author": "John Factotum",
+  "author": "Stonega",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/johnfactotum/foliate/issues"
+    "url": "https://github.com/stonega/foliate.ai/issues"
   },
   "homepage": "https://johnfactotum.github.io/foliate/",
   "type": "module",

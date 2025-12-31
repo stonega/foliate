@@ -1,9 +1,11 @@
 <img src="data/com.github.johnfactotum.Foliate.svg" align="left" style="margin-right:8px"> 
 <br><br>
 
-# Foliate
+Forked from [Foliate](https://github.com/johnfactotum/foliate).
 
-Read books in style.
+# Foliate.ai
+
+Read books in style with AI.
 
 ![Screenshot](data/screenshots/screenshot.png)
 

@@ -1,10 +1,10 @@
-Name:           foliate
-Version:        3.3.0
+Name:           foliate.ai
+Version:        3.3.2
 Release:        1%{?dist}
 Summary:        Read books in style
 
 License:        GPLv3+
-URL:            https://github.com/johnfactotum/foliate
+URL:            https://github.com/stonega/foliate.ai
 Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
@@ -37,19 +37,19 @@ A simple and modern eBook viewer for Linux desktops.
 
 %install
 %meson_install
-%find_lang com.github.johnfactotum.Foliate
+%find_lang com.github.stonega.Foliate.ai
 
 %check
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.xml
 desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
-%files -f com.github.johnfactotum.Foliate.lang
-%{_bindir}/foliate
+%files -f com.github.stonega.Foliate.ai.lang
+%{_bindir}/foliate.ai
 %{_datadir}/applications/*.desktop
 %{_datadir}/glib-2.0/schemas/*.gschema.xml
 %{_datadir}/icons/hicolor/*/apps/*.svg
 %{_metainfodir}/*.xml
-%{_datadir}/com.github.johnfactotum.Foliate/
+%{_datadir}/com.github.stonega.Foliate.ai/
 %license COPYING
 %doc README.md
 
