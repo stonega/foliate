@@ -1,6 +1,6 @@
-name: foliate
+name: foliate.ai
 grade: stable
-adopt-info: foliate
+adopt-info: foliate.ai
 license: GPL-3.0+
 base: core24
 confinement: strict
@@ -13,7 +13,7 @@ layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET/webkitgtk-6.0:
     bind: $SNAP/webkitgtk-platform/usr/lib/$CRAFT_ARCH_TRIPLET/webkitgtk-6.0
 slots:
-  foliate:
+  foliate.ai:
     interface: dbus
     bus: session
     name: com.github.johnfactotum.Foliate
@@ -23,8 +23,8 @@ plugs:
     target: $SNAP/webkitgtk-platform
     default-provider: webkitgtk-6-gnome-2404
 apps:
-  foliate:
-    command: usr/bin/foliate
+  foliate.ai:
+    command: usr/bin/foliate.ai
     extensions:
       - gnome
     plugs:
@@ -41,14 +41,14 @@ apps:
       LD_LIBRARY_PATH: $SNAP/webkitgtk-platform/usr/lib:$SNAP/webkitgtk-platform/usr/lib/$CRAFT_ARCH_TRIPLET:$LD_LIBRARY_PATH
       GI_TYPELIB_PATH: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/girepository-1.0:$SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/gjs/girepository-1.0:$SNAP/webkitgtk-platform/usr/lib/$CRAFT_ARCH_TRIPLET/girepository-1.0
 parts:
-  foliate:
+  foliate.ai:
     plugin: meson
-    source: https://github.com/johnfactotum/foliate.git
+    source: https://github.com/stonega/foliate.ai.git
     source-tag: '3.2.1'
     build-environment:
       - PKG_CONFIG_PATH: /snap/webkitgtk-6-gnome-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET/pkgconfig:$PKG_CONFIG_PATH
     meson-parameters:
-      - --prefix=/snap/foliate/current/usr
+      - --prefix=/snap/foliate.ai/current/usr
     override-pull: |
       craftctl default
       sed -i '1c#!/snap/foliate/current/gnome-platform/usr/bin/gjs -m' src/main.js
@@ -59,7 +59,7 @@ parts:
     parse-info:
       - usr/share/metainfo/com.github.johnfactotum.Foliate.metainfo.xml
     organize:
-      snap/foliate/current/usr: usr
+      snap/foliate.ai/current/usr: usr
   deps:
     plugin: nil
     stage-packages:

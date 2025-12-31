@@ -1,7 +1,7 @@
 {
   "name": "foliate.ai",
-  "version": "3.1.2",
-  "description": "Read e-books in style",
+  "version": "1.0.0",
+  "description": "Read books in style with AI",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stonega/foliate.ai.git"
@@ -11,7 +11,6 @@
   "bugs": {
     "url": "https://github.com/stonega/foliate.ai/issues"
   },
-  "homepage": "https://johnfactotum.github.io/foliate/",
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^9.9.1",

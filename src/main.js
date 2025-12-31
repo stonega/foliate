@@ -7,17 +7,17 @@ import Gio from 'gi://Gio?version=2.0'
 import GLib from 'gi://GLib?version=2.0'
 import 'gi://Adw?version=1'
 import 'gi://WebKit?version=6.0'
-import { programInvocationName, programArgs, exit }  from 'system'
+import { programInvocationName, programArgs, exit } from 'system'
 import { bindtextdomain, textdomain, gettext as _ } from 'gettext'
 import { setConsoleLogDomain } from 'console'
 
 // mimics (loosely) the `pkg` object set up by GJS if you run `package.init()`
 globalThis.pkg = {
-    name: 'com.github.johnfactotum.Foliate',
-    version: '3.3.0',
+    name: 'com.github.stonega.Foliate.ai',
+    version: '1.0.0',
     MESON,
 }
-pkg.userAgent = `Foliate/${pkg.version}`
+pkg.userAgent = `Foliate.ai/${pkg.version}`
 
 GLib.set_prgname(pkg.name)
 setConsoleLogDomain(pkg.name)
@@ -25,7 +25,7 @@ Gtk.Window.set_default_icon_name(pkg.name)
 bindtextdomain(pkg.name, GLib.build_filenamev([MESON ? '@datadir@' : '/usr/share', 'locale']))
 textdomain(pkg.name)
 
-pkg.localeName = _('Foliate')
+pkg.localeName = _('Foliate.ai')
 GLib.set_application_name(pkg.localeName)
 
 pkg.datadir = GLib.build_filenamev([GLib.get_user_data_dir(), pkg.name])

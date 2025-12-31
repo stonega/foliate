@@ -31,10 +31,10 @@ If installed, `tracker` (>= 3; `gir1.2-tracker-3.0` in Debian-based distros) and
 The repo uses git submodules. Before running or installing, make sure you clone the whole thing with `--recurse-submodules`:
 
 ```
-git clone --recurse-submodules https://github.com/johnfactotum/foliate.git 
+git clone --recurse-submodules https://github.com/stonega/foliate.ai.git 
 ```
 
-Or download the tarball (the `.tar.xz` file) from the [Releases](https://github.com/johnfactotum/foliate/releases) page.
+Or download the tarball (the `.tar.xz` file) from the [Releases](https://github.com/stonega/foliate.ai/releases) page.
 
 ### Run without Building or Installing
 
