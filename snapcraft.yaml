@@ -51,8 +51,14 @@ parts:
       - --prefix=/snap/foliate.ai/current/usr
     override-pull: |
       craftctl default
+      # Workaround for snapcraft not copying submodules in local source
+      if [ ! -f src/foliate-js/comic-book.js ]; then
+        rm -rf src/foliate-js
+        git clone https://github.com/johnfactotum/foliate-js src/foliate-js
+      fi
       sed -i '1c#!/snap/foliate/current/gnome-platform/usr/bin/gjs -m' src/main.js
     build-packages:
+      - git
       - xmlstarlet
     build-snaps:
       - webkitgtk-6-gnome-2404-sdk/latest/stable
