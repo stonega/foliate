@@ -872,7 +872,7 @@ export const AIChatPanel = GObject.registerClass({
         // Inject marked.js library
         this.#ready = this.#ready.then(() => {
             try {
-                const markedFile = Gio.File.new_for_uri(pkg.moduleuri('/foliate-js/vendor/marked.js'))
+                const markedFile = Gio.File.new_for_uri(pkg.moduleuri('/vendor/marked.js'))
                 const [, contents] = markedFile.load_contents(null)
                 const markedCode = new TextDecoder().decode(contents)
                 return this.#webView.run(markedCode)

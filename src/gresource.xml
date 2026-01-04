@@ -20,6 +20,7 @@
     <file>tts.js</file>
     <file>utils.js</file>
     <file>webview.js</file>
+    <file>vendor/marked.js</file>
     <file>ui/ai-chat-panel.ui</file>
     <file>ui/ai-model-editor.ui</file>
     <file>ui/ai-settings-dialog.ui</file>
