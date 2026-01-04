@@ -13,7 +13,7 @@ import { setConsoleLogDomain } from 'console'
 
 // mimics (loosely) the `pkg` object set up by GJS if you run `package.init()`
 globalThis.pkg = {
-    name: 'com.github.stonega.Foliate.ai',
+    name: 'io.github.stonega.foliate',
     version: '1.0.0',
     MESON,
 }

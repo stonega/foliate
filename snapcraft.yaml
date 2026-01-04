@@ -16,7 +16,7 @@ slots:
   foliate.ai:
     interface: dbus
     bus: session
-    name: com.github.johnfactotum.Foliate
+    name: io.github.stonega.foliate
 plugs:
   webkitgtk-6-gnome-2404:
     interface: content
@@ -24,7 +24,7 @@ plugs:
     default-provider: webkitgtk-6-gnome-2404
 apps:
   foliate.ai:
-    command: usr/bin/foliate.ai
+    command: usr/bin/foliate-ai
     extensions:
       - gnome
     plugs:
@@ -34,8 +34,8 @@ apps:
       - network-status
       - unity7
       - audio-playback
-    desktop: usr/share/applications/com.github.johnfactotum.Foliate.desktop
-    common-id: com.github.johnfactotum.Foliate
+    desktop: usr/share/applications/io.github.stonega.foliate.desktop
+    common-id: io.github.stonega.foliate
     environment:
       SPEECHD_ADDRESS: "unix_socket:/run/user/$SNAP_UID/speech-dispatcher/speechd.sock"
       LD_LIBRARY_PATH: $SNAP/webkitgtk-platform/usr/lib:$SNAP/webkitgtk-platform/usr/lib/$CRAFT_ARCH_TRIPLET:$LD_LIBRARY_PATH
@@ -57,7 +57,7 @@ parts:
     build-snaps:
       - webkitgtk-6-gnome-2404-sdk/latest/stable
     parse-info:
-      - usr/share/metainfo/com.github.johnfactotum.Foliate.metainfo.xml
+      - usr/share/metainfo/io.github.stonega.foliate.metainfo.xml
     organize:
       snap/foliate.ai/current/usr: usr
   deps:

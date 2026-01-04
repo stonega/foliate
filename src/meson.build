@@ -4,7 +4,7 @@ bin_conf.set('datadir', join_paths(get_option('prefix'), get_option('datadir')))
 
 configure_file(
     input: 'main.js',
-    output: 'foliate',
+    output: 'foliate-ai',
     configuration: bin_conf,
     install_dir: get_option('bindir'),
 )

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-    <id>com.github.johnfactotum.Foliate</id>
+    <id>io.github.stonega.foliate</id>
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>GPL-3.0-or-later</project_license>
     <name translate="no">Foliate</name>
     <summary>Read e-books in style</summary>
-    <translation type="gettext">com.github.johnfactotum.Foliate</translation>
+    <translation type="gettext">io.github.stonega.foliate</translation>
     <description>
         <p>Discover a new chapter in reading with Foliate, the modern e-book reader tailored for GNOME. Immerse yourself in a distraction-free interface, with customization features designed to match your unique preferences.</p>
         <p>Features include:</p>
@@ -24,7 +24,7 @@
     <developer id="io.github.johnfactotum">
         <name translate="no">John Factotum</name>
     </developer>
-    <launchable type="desktop-id">com.github.johnfactotum.Foliate.desktop</launchable>
+    <launchable type="desktop-id">io.github.stonega.foliate.desktop</launchable>
     <url type="homepage">https://johnfactotum.github.io/foliate/</url>
     <url type="vcs-browser">https://github.com/johnfactotum/foliate</url>
     <url type="bugtracker">https://github.com/johnfactotum/foliate/issues</url>
