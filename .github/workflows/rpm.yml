@@ -38,8 +38,8 @@ jobs:
           # Setup rpmbuild tree
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
 
-          # Create tarball including submodules
-          tar --exclude-vcs --transform "s|^|foliate-$VERSION/|" -czf ~/rpmbuild/SOURCES/foliate-$VERSION.tar.gz .
+          # Create tarball including submodules (name must match Name in spec file)
+          tar --exclude-vcs --transform "s|^|foliate.ai-$VERSION/|" -czf ~/rpmbuild/SOURCES/foliate.ai-$VERSION.tar.gz .
           
           cp .github/packaging/foliate.spec ~/rpmbuild/SPECS/
 

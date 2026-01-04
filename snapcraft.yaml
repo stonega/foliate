@@ -43,8 +43,8 @@ apps:
 parts:
   foliate.ai:
     plugin: meson
-    source: https://github.com/stonega/foliate.ai.git
-    source-tag: '3.2.1'
+    source: .
+    source-type: local
     build-environment:
       - PKG_CONFIG_PATH: /snap/webkitgtk-6-gnome-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET/pkgconfig:$PKG_CONFIG_PATH
     meson-parameters:
