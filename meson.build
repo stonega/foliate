@@ -1,5 +1,5 @@
 project('io.github.stonega.foliate',
-    version: '3.3.0',
+    version: '4.0.0',
     meson_version: '>= 0.59.0',
 )
 

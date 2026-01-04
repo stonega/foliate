@@ -49,6 +49,14 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="4.0.0" date="2026-01-04">
+            <url type="details">https://github.com/stonega/foliate/releases/tag/4.0.0</url>
+            <description>
+                <ul>
+                    <li>Bugs fixed</li>
+                </ul>
+            </description>
+        </release>
         <release version="3.3.0" date="2025-04-01">
             <url type="details">https://github.com/johnfactotum/foliate/releases/tag/3.3.0</url>
             <description>

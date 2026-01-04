@@ -1,3 +1,9 @@
+foliate (4.0.0) bionic; urgency=medium
+
+  * Bugs fixed
+
+ -- stonega <stonega@users.noreply.github.com>  Sat, 04 Jan 2026 17:45:00 +0800
+
 foliate (3.3.0) bionic; urgency=medium
 
   * New version

@@ -1,5 +1,5 @@
 Name:           foliate.ai
-Version:        1.0.0
+Version:        4.0.0
 Release:        1%{?dist}
 Summary:        Read books in style
 
@@ -54,5 +54,8 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %doc README.md
 
 %changelog
+* Sat Jan 04 2026 stonega <stonega@users.noreply.github.com> - 4.0.0-1
+- Bugs fixed
+
 * Tue Dec 03 2024 User <user@example.com> - 3.3.0-1
 - Initial package
