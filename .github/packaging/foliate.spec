@@ -37,19 +37,19 @@ A simple and modern eBook viewer for Linux desktops.
 
 %install
 %meson_install
-%find_lang com.github.stonega.Foliate.ai
+%find_lang com.github.johnfactotum.Foliate
 
 %check
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.xml
 desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
-%files -f com.github.stonega.Foliate.ai.lang
+%files -f com.github.johnfactotum.Foliate.lang
 %{_bindir}/foliate.ai
 %{_datadir}/applications/*.desktop
 %{_datadir}/glib-2.0/schemas/*.gschema.xml
 %{_datadir}/icons/hicolor/*/apps/*.svg
 %{_metainfodir}/*.xml
-%{_datadir}/com.github.stonega.Foliate.ai/
+%{_datadir}/com.github.stonega.foliate.ai/
 %license COPYING
 %doc README.md
 
