@@ -117,7 +117,7 @@ export const WebView = GObject.registerClass({
                 JSON.stringify({ token: "${token}", ok: false, payload:
                     e?.message + '\\n' + e?.stack + '\\n' + \`${func}\` })))`
         const promise = this.#promises.make(token)
-        this.evaluate_javascript(script, -1, null, null, null, () => {})
+        this.evaluate_javascript(script, -1, null, null, null, () => { })
         return promise
     }
     // call generator, get async generator object

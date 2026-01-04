@@ -15,7 +15,6 @@ const CHAT_HTML = `
 <html>
 <head>
 <meta charset="UTF-8">
-<script src="foliate:///foliate-js/vendor/marked.js"></script>
 <style>
 :root {
     color-scheme: light dark;
@@ -31,6 +30,7 @@ body {
     margin-bottom: 12px;
     padding: 10px 14px;
     border-radius: 12px;
+    width: fit-content;
     max-width: 90%;
     word-wrap: break-word;
 }
@@ -169,9 +169,9 @@ const ChatSession = GObject.registerClass({
         this.#messages.push(message)
         this.updated = new Date().toISOString()
         // Auto-generate title from first user message if not set
-        if (!this.title && message.role === 'user') {
-            this.title = message.content.substring(0, 50) + (message.content.length > 50 ? '…' : '')
-        }
+        // if (!this.title && message.role === 'user') {
+        //     this.title = message.content.substring(0, 50) + (message.content.length > 50 ? '…' : '')
+        // }
     }
 
     toJSON() {
@@ -245,8 +245,9 @@ export class ChatHistoryManager {
         const session = new ChatSession({
             book_title: bookTitle,
         })
-        this.#sessions.unshift(session)
-        this.#saveSessions()
+        // Don't save immediately - wait for assistant message
+        // this.#sessions.unshift(session)
+        // this.#saveSessions()
         return session
     }
 
@@ -260,8 +261,11 @@ export class ChatHistoryManager {
             this.#sessions[index] = session
             // Re-sort by updated date
             this.#sessions.sort((a, b) => new Date(b.updated) - new Date(a.updated))
-            this.#saveSessions()
+        } else {
+            // New session (upsert)
+            this.#sessions.unshift(session)
         }
+        this.#saveSessions()
     }
 
     deleteSession(id) {
@@ -865,6 +869,18 @@ export const AIChatPanel = GObject.registerClass({
 
         this.#ready = this.#webView.loadHTML(CHAT_HTML, 'foliate:///ai-chat/')
 
+        // Inject marked.js library
+        this.#ready = this.#ready.then(() => {
+            try {
+                const markedFile = Gio.File.new_for_uri(pkg.moduleuri('/foliate-js/vendor/marked.js'))
+                const [, contents] = markedFile.load_contents(null)
+                const markedCode = new TextDecoder().decode(contents)
+                return this.#webView.run(markedCode)
+            } catch (e) {
+                console.error('Failed to load marked.js:', e)
+            }
+        })
+
         // Inject colors
         const context = this.get_style_context()
         const [hasBg, bgColor] = context.lookup_color('accent_bg_color')
@@ -958,8 +974,8 @@ export const AIChatPanel = GObject.registerClass({
     }
 
     #startNewChat() {
-        // Save current session if it has messages
-        if (this.#currentSession && this.#messages.length > 0) {
+        // Save current session if it has messages and assistant response
+        if (this.#currentSession && this.#shouldSaveSession(this.#currentSession)) {
             chatHistoryManager.updateSession(this.#currentSession)
         }
 
@@ -984,7 +1000,7 @@ export const AIChatPanel = GObject.registerClass({
         if (!session) return
 
         // Save current session first
-        if (this.#currentSession && this.#messages.length > 0) {
+        if (this.#currentSession && this.#shouldSaveSession(this.#currentSession)) {
             chatHistoryManager.updateSession(this.#currentSession)
         }
 
@@ -1079,10 +1095,42 @@ export const AIChatPanel = GObject.registerClass({
             })
             this.#addMessage(assistantMessage)
 
+            // Generate title if needed
+            if (this.#currentSession && !this.#currentSession.title) {
+                const firstUserMessage = this.#messages.find(m => m.role === 'user')
+                if (firstUserMessage) {
+                    this.#generateTitle(firstUserMessage.content)
+                }
+            }
+
         } catch (e) {
             this.#showError(e.message)
         } finally {
             this.#setLoading(false)
+        }
+    }
+
+    async #generateTitle(userContent) {
+        const model = aiModelsManager.getDefaultModel()
+        if (!model) return
+
+        try {
+            const messages = [{
+                role: 'user',
+                content: `Generate a short, concise title (max 5 words) for this conversation query. Do not use quotes. \n\nQuery: "${userContent}"`
+            }]
+
+            // Generate title without document context
+            const title = await this.#chatService.sendMessage(model, messages, null)
+
+            if (title && this.#currentSession) {
+                this.#currentSession.title = title.replace(/^["']|["']$/g, '').trim()
+                if (this.#shouldSaveSession(this.#currentSession)) {
+                    chatHistoryManager.updateSession(this.#currentSession)
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to generate chat title:', e)
         }
     }
 
@@ -1092,7 +1140,9 @@ export const AIChatPanel = GObject.registerClass({
         // Save to session
         if (this.#currentSession) {
             this.#currentSession.addMessage(message)
-            chatHistoryManager.updateSession(this.#currentSession)
+            if (this.#shouldSaveSession(this.#currentSession)) {
+                chatHistoryManager.updateSession(this.#currentSession)
+            }
         }
 
         // Add to WebView
@@ -1150,8 +1200,12 @@ export const AIChatPanel = GObject.registerClass({
         // Update current session's book title if session exists and has no messages yet
         if (this.#currentSession && this.#messages.length === 0) {
             this.#currentSession.book_title = title
-            chatHistoryManager.updateSession(this.#currentSession)
+            // Don't save yet
         }
+    }
+
+    #shouldSaveSession(session) {
+        return session && session.messages.some(m => m.role === 'assistant')
     }
 
     setInputText(text) {
