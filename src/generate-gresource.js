@@ -27,7 +27,7 @@ const filter = ({ excludes, endsWith }) => ({ name }) => {
 
 const result = `<?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/com/github/johnfactotum/Foliate">
+  <gresource prefix="/io/github/stonega/foliate">
 ${[
         ...await getFiles('./', filter({
             excludes: ['generate-gresource.js', 'main.js'],
