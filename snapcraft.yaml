@@ -2,6 +2,7 @@ name: foliate-ai
 grade: stable
 adopt-info: foliate.ai
 license: GPL-3.0+
+contact: https://github.com/stonega/foliate.ai
 base: core24
 confinement: strict
 compression: lzo
@@ -23,7 +24,7 @@ plugs:
     target: $SNAP/webkitgtk-platform
     default-provider: webkitgtk-6-gnome-2404
 apps:
-  foliate.ai:
+  foliate-ai:
     command: usr/bin/foliate-ai
     extensions:
       - gnome
