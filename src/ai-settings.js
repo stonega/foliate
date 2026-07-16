@@ -241,7 +241,7 @@ export const AISettingsDialog = GObject.registerClass({
     InternalChildren: [
         'models-list', 'add-model-button',
         'include-context-switch', 'context-length-spin',
-        'empty-state',
+        'send-on-enter-switch', 'empty-state',
     ],
 }, class extends Adw.PreferencesDialog {
     #settings
@@ -255,6 +255,8 @@ export const AISettingsDialog = GObject.registerClass({
             this.#settings.bind('include-context', this._include_context_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
             this.#settings.bind('context-length', this._context_length_spin, 'value',
+                Gio.SettingsBindFlags.DEFAULT)
+            this.#settings.bind('send-on-enter', this._send_on_enter_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
         }
 

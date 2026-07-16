@@ -149,6 +149,11 @@
       <summary>Include Document Context</summary>
       <description>Whether to include current document content as context for AI</description>
     </key>
+    <key name="send-on-enter" type="b">
+      <default>true</default>
+      <summary>Send on Enter</summary>
+      <description>Whether pressing Enter sends an AI chat message instead of inserting a new line</description>
+    </key>
     <key name="context-length" type="i">
       <default>2000</default>
       <summary>Context Length</summary>

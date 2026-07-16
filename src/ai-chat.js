@@ -916,16 +916,30 @@ export const AIChatPanel = GObject.registerClass({
             this.#clearManualContext()
         })
 
-        // Key handling: Enter for new line, Ctrl+Enter to send
+        const updateSendShortcut = () => {
+            const sendOnEnter = this.#settings?.get_boolean('send-on-enter') ?? true
+            this._send_hint_label.label = sendOnEnter
+                ? _('Enter to send')
+                : _('Ctrl+Enter to send')
+            this._send_button.tooltip_text = sendOnEnter
+                ? _('Send Message (Enter)')
+                : _('Send Message (Ctrl+Enter)')
+        }
+        updateSendShortcut()
+        this.#settings?.connect('changed::send-on-enter', updateSendShortcut)
+
+        // Send with the configured shortcut; the other Enter combination adds a new line.
         const keyController = new Gtk.EventControllerKey()
         keyController.connect('key-pressed', (_, keyval, keycode, state) => {
             if (keyval === 65293 || keyval === 65421) { // Return or KP_Enter
-                if (state & Gdk.ModifierType.CONTROL_MASK) {
-                    // Ctrl+Enter to send
+                if (state & Gdk.ModifierType.SHIFT_MASK) return false
+
+                const controlPressed = Boolean(state & Gdk.ModifierType.CONTROL_MASK)
+                const sendOnEnter = this.#settings?.get_boolean('send-on-enter') ?? true
+                if (sendOnEnter ? !controlPressed : controlPressed) {
                     this.#sendMessage()
                     return true
                 }
-                // Plain Enter inserts new line (default behavior)
                 return false
             }
             return false

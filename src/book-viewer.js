@@ -91,7 +91,8 @@ const ViewPreferencesWindow = GObject.registerClass({
         'theme-flow-box',
         'reduce-animation',
         'ai-page', 'models-list', 'add-model-button',
-        'include-context-switch', 'context-length-spin', 'empty-state',
+        'include-context-switch', 'context-length-spin',
+        'send-on-enter-switch', 'empty-state',
     ],
 }, class extends Adw.PreferencesDialog {
     constructor(params) {
@@ -151,6 +152,8 @@ const ViewPreferencesWindow = GObject.registerClass({
             this.aiSettings.bind('include-context', this._include_context_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
             this.aiSettings.bind('context-length', this._context_length_spin, 'value',
+                Gio.SettingsBindFlags.DEFAULT)
+            this.aiSettings.bind('send-on-enter', this._send_on_enter_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
         }
         this._add_model_button.connect('clicked', () => this.#showModelEditor())

@@ -60,6 +60,26 @@
           </child>
         </object>
       </child>
+
+      <!-- Chat Settings -->
+      <child>
+        <object class="AdwPreferencesGroup">
+          <property name="title" translatable="yes">Chat</property>
+
+          <child>
+            <object class="AdwActionRow">
+              <property name="title" translatable="yes">Enter to Send</property>
+              <property name="subtitle" translatable="yes">Turn off to send with Ctrl+Enter instead</property>
+              <property name="activatable-widget">send-on-enter-switch</property>
+              <child type="suffix">
+                <object class="GtkSwitch" id="send-on-enter-switch">
+                  <property name="valign">center</property>
+                </object>
+              </child>
+            </object>
+          </child>
+        </object>
+      </child>
       
       <!-- Context Settings -->
       <child>
