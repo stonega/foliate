@@ -49,6 +49,14 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="4.0.2" date="2026-07-16">
+            <url type="details">https://github.com/stonega/foliate.ai/releases/tag/v4.0.2</url>
+            <description>
+                <ul>
+                    <li>Added a setting to choose Enter or Ctrl+Enter for sending AI chat messages</li>
+                </ul>
+            </description>
+        </release>
         <release version="4.0.1" date="2026-01-04">
             <url type="details">https://github.com/stonega/foliate/releases/tag/4.0.1</url>
             <description>

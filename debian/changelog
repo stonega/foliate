@@ -1,3 +1,9 @@
+foliate (4.0.2) bionic; urgency=medium
+
+  * Add a setting to choose Enter or Ctrl+Enter for sending AI chat messages
+
+ -- stonega <stonega@users.noreply.github.com>  Thu, 16 Jul 2026 18:30:46 +0800
+
 foliate (4.0.1) bionic; urgency=medium
 
   * Bugs fixed
