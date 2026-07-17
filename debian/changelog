@@ -1,3 +1,10 @@
+foliate (4.0.3) bionic; urgency=medium
+
+  * Explain selected text in a new AI chat immediately
+  * Add a configurable explanation language with translation support
+
+ -- stonega <stonega@users.noreply.github.com>  Fri, 17 Jul 2026 19:10:54 +0800
+
 foliate (4.0.2) bionic; urgency=medium
 
   * Add a setting to choose Enter or Ctrl+Enter for sending AI chat messages

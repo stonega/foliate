@@ -1,5 +1,5 @@
 Name:           foliate.ai
-Version:        4.0.2
+Version:        4.0.3
 Release:        1%{?dist}
 Summary:        Read books in style
 
@@ -54,6 +54,10 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %doc README.md
 
 %changelog
+* Fri Jul 17 2026 stonega <stonega@users.noreply.github.com> - 4.0.3-1
+- Explain selected text in a new AI chat immediately
+- Add a configurable explanation language with translation support
+
 * Thu Jul 16 2026 stonega <stonega@users.noreply.github.com> - 4.0.2-1
 - Add a setting to choose Enter or Ctrl+Enter for sending AI chat messages
 

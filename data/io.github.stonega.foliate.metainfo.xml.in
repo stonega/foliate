@@ -49,6 +49,15 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="4.0.3" date="2026-07-17">
+            <url type="details">https://github.com/stonega/foliate/releases/tag/v4.0.3</url>
+            <description>
+                <ul>
+                    <li>Explain selected text in a new AI chat immediately</li>
+                    <li>Configure the explanation language and include translations when needed</li>
+                </ul>
+            </description>
+        </release>
         <release version="4.0.2" date="2026-07-16">
             <url type="details">https://github.com/stonega/foliate.ai/releases/tag/v4.0.2</url>
             <description>
