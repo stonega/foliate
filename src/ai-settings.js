@@ -6,7 +6,54 @@ import GObject from 'gi://GObject'
 import { gettext as _ } from 'gettext'
 
 import * as utils from './utils.js'
+import { locales } from './format.js'
 import { AIModel, aiModelsManager, aiChatService } from './ai-chat.js'
+
+export const explainLanguages = [
+    ['en', 'English'],
+    ['zh-Hans', 'Simplified Chinese'],
+    ['zh-Hant', 'Traditional Chinese'],
+    ['es', 'Spanish'],
+    ['fr', 'French'],
+    ['de', 'German'],
+    ['ja', 'Japanese'],
+    ['ko', 'Korean'],
+    ['pt', 'Portuguese'],
+    ['ru', 'Russian'],
+    ['ar', 'Arabic'],
+    ['hi', 'Hindi'],
+    ['it', 'Italian'],
+    ['nl', 'Dutch'],
+    ['tr', 'Turkish'],
+    ['vi', 'Vietnamese'],
+    ['id', 'Indonesian'],
+]
+
+export const getExplainLanguageName = code =>
+    explainLanguages.find(([languageCode]) => languageCode === code)?.[1]
+        ?? explainLanguages[0][1]
+
+export const setupExplainLanguageRow = (row, settings) => {
+    const displayNames = new Intl.DisplayNames(locales, { type: 'language' })
+    const model = new Gtk.StringList()
+    for (const [code] of explainLanguages)
+        model.append(displayNames.of(code) ?? code)
+    row.model = model
+
+    if (!settings) {
+        row.sensitive = false
+        return
+    }
+
+    const language = settings.get_string('explain-language')
+    const index = explainLanguages.findIndex(([code]) => code === language)
+    row.selected = index >= 0 ? index : 0
+    row.connect('notify::selected', () => {
+        const code = explainLanguages[row.selected]?.[0]
+        if (code && settings.get_string('explain-language') !== code)
+            settings.set_string('explain-language', code)
+    })
+}
 
 // Individual model row widget
 export const AIModelRow = GObject.registerClass({
@@ -241,7 +288,7 @@ export const AISettingsDialog = GObject.registerClass({
     InternalChildren: [
         'models-list', 'add-model-button',
         'include-context-switch', 'context-length-spin',
-        'send-on-enter-switch', 'empty-state',
+        'explain-language-row', 'send-on-enter-switch', 'empty-state',
     ],
 }, class extends Adw.PreferencesDialog {
     #settings
@@ -259,6 +306,7 @@ export const AISettingsDialog = GObject.registerClass({
             this.#settings.bind('send-on-enter', this._send_on_enter_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
         }
+        setupExplainLanguageRow(this._explain_language_row, this.#settings)
 
         // Connect add button
         this._add_model_button.connect('clicked', () => this.#showModelEditor())

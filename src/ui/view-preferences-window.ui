@@ -319,6 +319,13 @@
           <property name="title" translatable="yes">Chat</property>
 
           <child>
+            <object class="AdwComboRow" id="explain-language-row">
+              <property name="title" translatable="yes">Explain Language</property>
+              <property name="subtitle" translatable="yes">Language used for explanations and translations</property>
+            </object>
+          </child>
+
+          <child>
             <object class="AdwActionRow">
               <property name="title" translatable="yes">Enter to Send</property>
               <property name="subtitle" translatable="yes">Turn off to send with Ctrl+Enter instead</property>

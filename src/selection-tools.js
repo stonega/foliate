@@ -133,7 +133,7 @@ export const SelectionPopover = GObject.registerClass({
     Signals: {
         'show-popover': { param_types: [Gtk.Popover.$gtype] },
         'run-tool': { return_type: GObject.TYPE_JSOBJECT },
-        'ask-ai': { param_types: [GObject.TYPE_STRING] },
+        'explain-with-ai': { param_types: [GObject.TYPE_STRING] },
     },
 }, class extends Gtk.PopoverMenu {
     constructor(params) {
@@ -158,14 +158,14 @@ export const SelectionPopover = GObject.registerClass({
             section.append(tool.label, `selection-tools.${name}`)
         }
 
-        // Add "Ask AI" action after tools
-        const askAiAction = new Gio.SimpleAction({ name: 'ask-ai' })
-        askAiAction.connect('activate', () => {
+        // Add the AI explanation action after the other tools
+        const explainWithAiAction = new Gio.SimpleAction({ name: 'explain-with-ai' })
+        explainWithAiAction.connect('activate', () => {
             const { text } = this.emit('run-tool')
-            this.emit('ask-ai', text)
+            this.emit('explain-with-ai', text)
             this.popdown()
         })
-        group.add_action(askAiAction)
-        section.append(_('Ask AI'), 'selection-tools.ask-ai')
+        group.add_action(explainWithAiAction)
+        section.append(_('Explain with AI'), 'selection-tools.explain-with-ai')
     }
 })

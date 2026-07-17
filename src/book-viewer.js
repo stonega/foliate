@@ -22,7 +22,10 @@ import { formatLanguageMap, formatAuthors, makeBookInfoWindow } from './book-inf
 import { themes, invertTheme, themeCssProvider } from './themes.js'
 import { dataStore } from './data.js'
 import { AIChatPanel, aiModelsManager } from './ai-chat.js'
-import { AIModelRow, AIModelEditorDialog } from './ai-settings.js'
+import {
+    AIModelRow, AIModelEditorDialog,
+    getExplainLanguageName, setupExplainLanguageRow,
+} from './ai-settings.js'
 
 // for use in the WebView
 const uiText = {
@@ -92,7 +95,7 @@ const ViewPreferencesWindow = GObject.registerClass({
         'reduce-animation',
         'ai-page', 'models-list', 'add-model-button',
         'include-context-switch', 'context-length-spin',
-        'send-on-enter-switch', 'empty-state',
+        'explain-language-row', 'send-on-enter-switch', 'empty-state',
     ],
 }, class extends Adw.PreferencesDialog {
     constructor(params) {
@@ -156,6 +159,7 @@ const ViewPreferencesWindow = GObject.registerClass({
             this.aiSettings.bind('send-on-enter', this._send_on_enter_switch, 'active',
                 Gio.SettingsBindFlags.DEFAULT)
         }
+        setupExplainLanguageRow(this._explain_language_row, this.aiSettings)
         this._add_model_button.connect('clicked', () => this.#showModelEditor())
         this.#loadModels()
     }
@@ -965,9 +969,9 @@ export const BookViewer = GObject.registerClass({
                 'show-popover': (_, popover) =>
                     this._view.showPopover(popover, point, dir),
                 'run-tool': () => ({ text, lang }),
-                'ask-ai': (_, selectedText) => {
+                'explain-with-ai': (_, selectedText) => {
                     resolved = true
-                    this.#askAI(selectedText)
+                    this.#explainWithAI(selectedText)
                     resolve()
                 },
                 // it seems `closed` is emitted before the actions are run
@@ -1411,14 +1415,17 @@ export const BookViewer = GObject.registerClass({
         this.#showAISettings()
     }
 
-    #askAI(text) {
+    #explainWithAI(text) {
         // Show the AI panel if not visible
         if (!this._ai_panel_button.active) {
             this._ai_panel_button.active = true
         }
-        // Set the text in the AI panel input and focus it
+
         if (this.#aiPanel) {
-            this.#aiPanel.setInputText(text)
+            const code = this.#aiSettings?.get_string('explain-language') ?? 'en'
+            const language = getExplainLanguageName(code)
+            const message = `${text}\n\nExplain this with ${language}, if not same language, also add a translation.`
+            this.#aiPanel.startNewChatWithMessage(message)
         }
     }
 

@@ -994,11 +994,12 @@ export const AIChatPanel = GObject.registerClass({
         }
 
         // Clear UI
-        this.#clearChatUI()
+        const cleared = this.#clearChatUI()
 
         // Create new session
         this.#currentSession = chatHistoryManager.createSession(this.book_title)
         this.#messages = []
+        return cleared
     }
 
     #showHistoryDialog() {
@@ -1199,6 +1200,15 @@ export const AIChatPanel = GObject.registerClass({
 
     clearChat() {
         this.#startNewChat()
+    }
+
+    async startNewChatWithMessage(text) {
+        const message = text?.trim()
+        if (!message) return
+
+        await this.#startNewChat()
+        this.setInputText(message)
+        await this.#sendMessage()
     }
 
     refreshModelLabel() {
